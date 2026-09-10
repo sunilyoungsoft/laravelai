@@ -1,0 +1,91 @@
+---
+description: Multi-tenant database isolation rules
+alwaysApply: true
+---
+
+# Multi-Tenancy Rules
+
+This application uses:
+
+One Master Database
++
+One separate database per company/tenant.
+
+## Master Database
+
+The Master Database contains platform-level information only.
+
+Examples:
+
+- companies
+- users
+- company_users
+- plans
+- subscriptions
+- domains
+- modules
+- company_modules
+- licenses
+- platform settings
+
+Never store tenant business data in the Master Database.
+
+## Tenant Database
+
+Tenant databases contain company-specific business data.
+
+Examples:
+
+- customers
+- employees
+- tasks
+- sales
+- purchases
+- invoices
+- inventory
+
+## Tenant Context
+
+Every tenant operation must execute inside a valid TenantContext.
+
+Never execute tenant business queries without tenant context.
+
+Never silently fall back to the Master Database.
+
+Missing tenant context must fail safely.
+
+## Database Switching
+
+Use a centralized TenantManager for:
+
+- resolving tenant
+- loading database configuration
+- switching database
+- reconnecting
+- disconnecting
+- restoring connection
+
+Do not manually switch databases throughout controllers or services.
+
+## Security
+
+Company A must never access Company B data.
+
+Tenant isolation must be tested.
+
+This applies to:
+
+- HTTP requests
+- API requests
+- queues
+- events
+- listeners
+- notifications
+- scheduled jobs
+- console commands
+
+## Jobs
+
+Every tenant-specific queued job must preserve enough information to restore TenantContext.
+
+Never assume the original HTTP request context exists inside a queue worker.

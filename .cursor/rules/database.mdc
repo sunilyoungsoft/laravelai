@@ -1,0 +1,78 @@
+---
+description: Database architecture and migration standards
+alwaysApply: false
+globs:
+  - "**/Migrations/**"
+  - "**/Models/**"
+---
+
+# Database Rules
+
+## Ownership
+
+Master DB:
+Platform data.
+
+Tenant DB:
+Business data.
+
+Never mix them.
+
+## Migrations
+
+Every module owns its migrations.
+
+Migrations must be:
+
+- deterministic
+- reversible where practical
+- safe
+- properly indexed
+
+Avoid destructive migrations unless explicitly required.
+
+## Indexes
+
+Add indexes based on:
+
+- foreign keys
+- frequently queried columns
+- unique constraints
+- filtering/sorting requirements
+
+Do not add indexes blindly.
+
+## Relationships
+
+Use proper database constraints where appropriate.
+
+Prefer foreign keys for important relationships unless there is a documented reason not to.
+
+## Transactions
+
+Use database transactions for multi-step business operations that must succeed or fail together.
+
+## Data Types
+
+Choose appropriate column types.
+
+Do not use strings for everything.
+
+Use:
+
+- timestamps for dates
+- decimals for financial values
+- integers/big integers for IDs
+- JSON only when structured relational storage is not appropriate
+
+## Financial Data
+
+Never use floating-point values for monetary amounts.
+
+Use appropriate decimal precision.
+
+## Tenant Database
+
+Tenant migrations must be executable independently for every tenant.
+
+The migration system must safely track tenant migration status.
