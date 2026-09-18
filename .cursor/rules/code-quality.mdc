@@ -34,9 +34,11 @@ Controller
     ↓
 Request validation
     ↓
-Action / Service
+Service
     ↓
 Domain/Application logic
+
+Prefer Services over Actions for this project. Use an Action only when a single use-case object is clearly clearer than a Service method.
 
 ## Models
 
@@ -62,7 +64,8 @@ Use descriptive names.
 
 Prefer:
 
-CreateInvoiceAction
+InvoiceService
+CreateInvoice (service method)
 
 over:
 
@@ -83,6 +86,8 @@ Avoid generic classes such as:
 - Manager
 
 unless their responsibility is genuinely broad and well-defined.
+
+Approved exception: `TenantManager` is allowed for centralized tenant resolution and database switching when tenancy is implemented.
 
 ## Refactoring
 

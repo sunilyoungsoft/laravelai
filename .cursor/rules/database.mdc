@@ -2,21 +2,39 @@
 description: Database architecture and migration standards
 alwaysApply: false
 globs:
+  - "**/database/migrations/**"
   - "**/Migrations/**"
   - "**/Models/**"
+  - "**/models/**"
 ---
 
 # Database Rules
 
 ## Ownership
 
-Master DB:
-Platform data.
+Platform DB (`mysql` connection):
+Platform data only.
 
-Tenant DB:
-Business data.
+Workspace DB (`workspace` connection):
+Company/business data (one database per company).
 
 Never mix them.
+
+## Naming
+
+- SQL table and column names: snake_case
+- Table names: plural
+- Primary keys: ULID
+- Foreign keys: `{singular_table}_id`
+- Boolean fields: `is_xxx`
+- Timestamp fields: `*_at`
+
+## Timestamps (UTC)
+
+- Server timezone and application timezone: UTC
+- Laravel is the source of truth for system timestamps
+- Do not use MySQL `NOW()` or `CURRENT_TIMESTAMP` for application timestamps
+- Do not use migration `useCurrent()` / `useCurrentOnUpdate()` for application timestamp columns unless there is a documented infrastructure reason
 
 ## Migrations
 
@@ -62,7 +80,7 @@ Use:
 
 - timestamps for dates
 - decimals for financial values
-- integers/big integers for IDs
+- ULIDs for IDs
 - JSON only when structured relational storage is not appropriate
 
 ## Financial Data
@@ -71,8 +89,8 @@ Never use floating-point values for monetary amounts.
 
 Use appropriate decimal precision.
 
-## Tenant Database
+## Workspace Database
 
-Tenant migrations must be executable independently for every tenant.
+Workspace migrations must be executable independently for every workspace.
 
-The migration system must safely track tenant migration status.
+The migration system must safely track workspace migration status.

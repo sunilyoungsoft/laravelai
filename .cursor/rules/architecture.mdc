@@ -1,6 +1,8 @@
 ---
+description: Core architecture for the modular multi-tenant ERP SaaS
 alwaysApply: true
 ---
+
 # Core Architecture Rules
 
 You are working on a modular, multi-tenant ERP SaaS platform.
@@ -9,8 +11,8 @@ The system consists of:
 
 Platform Core
 Module System
-Master Database
-Tenant Databases
+Platform Database
+Workspace Databases
 API Layer
 Event System
 Queue System
@@ -19,16 +21,19 @@ Frontend
 ## Architecture Principles
 
 - Keep the Core stable.
-- Business functionality must live inside modules.
+- Business functionality must live inside modules under `Modules/{ModuleName}`.
+- Shared/core functionality lives under `app/`.
 - Modules must remain independently maintainable.
 - Avoid unnecessary coupling between modules.
 - Prefer contracts/events over direct module-to-module dependencies.
 - Keep controllers thin.
 - Keep business logic out of controllers.
-- Use services/actions for application workflows.
+- Prefer Service classes for meaningful application/business operations.
+- Use Actions only when a single-purpose use-case object is clearly clearer than a Service.
 - Use dependency injection.
 - Follow SOLID principles where they provide real value.
 - Do not introduce patterns merely for the sake of patterns.
+- Do not introduce microservices.
 
 ## Layers
 
@@ -48,10 +53,10 @@ Presentation:
 - Inertia pages
 
 Application:
-- Actions
 - Services
 - DTOs
 - Application workflows
+- Actions (only when justified)
 
 Domain:
 - Business rules

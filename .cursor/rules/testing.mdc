@@ -1,7 +1,8 @@
 ---
-description: this will help when your doing testing 
-alwaysApply: false
+description: Testing standards including tenant isolation
+alwaysApply: true
 ---
+
 # Testing Rules
 
 ## General

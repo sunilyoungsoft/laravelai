@@ -5,9 +5,12 @@ alwaysApply: true
 
 # Module Architecture
 
-Business functionality must be implemented as modules.
+Business functionality must be implemented as modules under:
 
-Examples:
+Modules/{ModuleName}/
+
+Shared/core functionality remains under app/.
+
 
 - Task
 - CRM

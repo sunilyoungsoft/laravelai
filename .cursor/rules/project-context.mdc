@@ -11,13 +11,15 @@ Architecture:
 
     Platform
         ↓
-    Master Database
+    Platform Database
         ↓
-    Tenant Resolver
+    Tenant / Workspace Resolver
         ↓
-    Separate Tenant Database per Company
+    Separate Workspace Database per Company
         ↓
-    Independent ERP Modules
+    Independent ERP Modules under Modules/{ModuleName}
+
+Shared/core functionality remains under app/.
 
 The system must support:
 
@@ -40,6 +42,8 @@ The system must support:
 - Future marketplace
 
 Initial business modules are NOT the current priority.
+
+Phase 0 focuses on foundation only (Laravel, MySQL/Redis/queue/scheduler, Inertia React TypeScript, health checks, conventions). Do not implement auth, RBAC, tenant provisioning, or business modules until the foundation phase is complete.
 
 First priority:
 
