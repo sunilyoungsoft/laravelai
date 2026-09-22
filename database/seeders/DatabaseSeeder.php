@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Phase 0: no auth/users seeders.
+        $this->call([
+            PlatformRoleSeeder::class,
+        ]);
     }
 }

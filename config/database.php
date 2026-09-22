@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => env('DB_CONNECTION', 'platform'),
 
     /*
     |--------------------------------------------------------------------------
@@ -44,13 +44,36 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
-        // Platform database — SaaS platform data only (companies, users, plans, etc. in later phases).
+        // Semantic platform database. Platform models, migrations, seeders, and
+        // services must use this connection explicitly — never assume Laravel default.
+        'platform' => [
+            'driver' => 'mysql',
+            'url' => env('PLATFORM_DB_URL'),
+            'host' => env('PLATFORM_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('PLATFORM_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('PLATFORM_DB_DATABASE', 'laravelai_platform'),
+            'username' => env('PLATFORM_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('PLATFORM_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('PLATFORM_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'timezone' => '+00:00',
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        // Generic MySQL driver entry for Laravel completeness. Not the platform architecture.
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravelai_platform'),
+            'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
             'unix_socket' => env('DB_SOCKET', ''),
@@ -66,7 +89,7 @@ return [
             ]) : [],
         ],
 
-        // Workspace database stub — one DB per company in later phases. Not switched in Phase 0.
+        // Workspace database stub — one DB per company in later phases. Not switched yet.
         'workspace' => [
             'driver' => 'mysql',
             'url' => env('WORKSPACE_DB_URL'),

@@ -1,0 +1,88 @@
+// Platform database schema — Phase 1B
+// Update this file whenever platform_db schema changes.
+// Do not document workspace databases here.
+
+Table platform_users {
+  id ulid [pk]
+  name varchar
+  email varchar [unique, not null]
+  phone varchar [unique, not null]
+  password varchar [not null]
+  email_verified_at timestamp [null]
+  status tinyint [default: 1, note: '1=active, 0=inactive']
+  failed_login_attempts smallint [default: 0]
+  is_locked boolean [default: false]
+  locked_until timestamp [null]
+  last_failed_login timestamp [null]
+  last_login_at timestamp [null]
+  two_factor_enabled boolean [default: false]
+  two_factor_secret text [null, note: 'Laravel encrypted cast']
+  two_factor_confirmed_at timestamp [null]
+  created_by ulid [null]
+  updated_by ulid [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+
+  Note: 'Platform authentication users. Soft deletes enabled. FK deletes: NO ACTION.'
+}
+
+Table platform_roles {
+  id ulid [pk]
+  name varchar
+  slug varchar [unique, not null]
+  description text [null]
+  is_system boolean [default: false]
+  status tinyint [default: 1]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+
+  Note: 'Protected Admin system role: slug=admin, is_system=true. No wildcard permissions. Soft deletes enabled.'
+}
+
+Table platform_permissions {
+  id ulid [pk]
+  name varchar
+  slug varchar [unique, not null]
+  description text [null]
+  status tinyint [default: 1]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+
+  Note: 'Permission catalog is introduced with Platform features. Soft deletes enabled.'
+}
+
+Table platform_user_roles {
+  user_id ulid [not null]
+  role_id ulid [not null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (user_id, role_id) [unique]
+  }
+
+  Note: 'Many-to-many: PlatformUser ↔ PlatformRole. FK deletes: NO ACTION.'
+}
+
+Table platform_role_permissions {
+  role_id ulid [not null]
+  permission_id ulid [not null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (role_id, permission_id) [unique]
+  }
+
+  Note: 'Many-to-many: PlatformRole ↔ PlatformPermission. FK deletes: NO ACTION.'
+}
+
+Ref: platform_users.created_by > platform_users.id [delete: no action]
+Ref: platform_users.updated_by > platform_users.id [delete: no action]
+Ref: platform_user_roles.user_id > platform_users.id [delete: no action]
+Ref: platform_user_roles.role_id > platform_roles.id [delete: no action]
+Ref: platform_role_permissions.role_id > platform_roles.id [delete: no action]
+Ref: platform_role_permissions.permission_id > platform_permissions.id [delete: no action]

@@ -12,13 +12,30 @@ globs:
 
 ## Ownership
 
-Platform DB (`mysql` connection):
+Platform DB (`platform` connection):
 Platform data only.
 
 Workspace DB (`workspace` connection):
 Company/business data (one database per company).
 
 Never mix them.
+
+Platform models, migrations, seeders, and services must use the `platform`
+connection explicitly. Do not rely on Laravel's default connection.
+
+Update `docs/database/platform.dbml` whenever platform_db schema changes.
+
+## Foreign keys
+
+Default delete behavior is `NO ACTION` (`noActionOnDelete()`).
+
+Do not use cascade deletes unless explicitly approved.
+
+## Platform Admin role
+
+The protected Admin system role (`slug=admin`, `is_system=true`) does **not**
+use wildcard permissions. Whenever a future Platform feature introduces a
+permission record, that permission must be assigned to the Admin system role.
 
 ## Naming
 
