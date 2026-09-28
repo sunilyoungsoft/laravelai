@@ -1,0 +1,99 @@
+---
+inclusion: always
+---
+
+# Code Quality
+
+Follow:
+
+- SOLID
+- DRY
+- clear naming
+- dependency injection
+- single responsibility
+- separation of concerns
+
+## Controllers
+
+Controllers should be thin.
+
+Bad:
+
+Controller contains:
+
+- validation
+- business rules
+- database queries
+- external API calls
+- notifications
+
+Prefer:
+
+Controller
+    ↓
+Request validation
+    ↓
+Service
+    ↓
+Domain/Application logic
+
+Prefer Services over Actions for this project. Use an Action only when a single use-case object is clearly clearer than a Service method.
+
+## Models
+
+Models should represent persistence and relationships.
+
+Do not turn models into giant business-logic containers.
+
+## Services
+
+Services should represent meaningful application operations.
+
+Avoid creating meaningless services that only wrap one trivial database call.
+
+## Repositories
+
+Do not create repositories automatically for every model.
+
+Use them when they provide meaningful abstraction or infrastructure separation.
+
+## Naming
+
+Use descriptive names.
+
+Prefer:
+
+InvoiceService
+CreateInvoice (service method)
+
+over:
+
+InvoiceHelper
+
+Prefer:
+
+ResolveTenant
+
+over:
+
+CommonHelper
+
+Avoid generic classes such as:
+
+- Helper
+- Utility
+- Manager
+
+unless their responsibility is genuinely broad and well-defined.
+
+Approved exception: `TenantManager` is allowed for centralized tenant resolution and database switching when tenancy is implemented.
+
+## Refactoring
+
+Before refactoring:
+
+1. Understand existing behavior.
+2. Check tests.
+3. Identify dependencies.
+4. Make the smallest safe change.
+5. Run tests.

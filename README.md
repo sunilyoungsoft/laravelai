@@ -30,7 +30,23 @@ Modular monolith ERP SaaS platform.
 
 **Admin permission invariant:** The Admin system role does not use wildcard permissions. When future Platform features add permission records, those permissions must be assigned to the Admin system role.
 
-Not included yet: login UI, 2FA flows, Companies, Workspace users/RBAC, Filament, Spatie Permission.
+**Soft-delete identity policy:** `email`, `phone`, and role/permission `slug` values remain reserved after soft delete. Restore the existing record instead of creating a duplicate identity.
+
+**Bootstrap Admin:** `php artisan platform:create-admin` creates only the first Platform Admin (including soft-deleted Admins in the existence check). Additional admins come later via Platform administration.
+
+**Auth:** `platform` guard + `platform_users` provider only. When Workspace auth is added: `platform` → PlatformUser, `web` → WorkspaceUser.
+
+### Phase 1C — Companies foundation
+
+- Table: `companies` on the `platform` connection (no physical Workspace DB yet)
+- Model: `Company` + `CompanyStatus` string-backed enum (default `pending`)
+- Service: `CompanyService` creates Platform company records only
+- `database_name` is application-generated: `workspace_{lowercase_ulid}` (metadata only)
+- Soft-delete identity: company `slug` and `database_name` remain reserved after soft delete
+
+Not included yet: Domains, Workspace DB provisioning, Workspace users/RBAC, subscriptions, modules, login UI, 2FA flows, password reset, Filament, Spatie Permission.
+
+**Tenancy spike:** Stancl (`stancl/tenancy` v3.10.1) was evaluated as infrastructure with Company as the tenant entity. Findings: [`docs/architecture/tenancy-spike.md`](docs/architecture/tenancy-spike.md).
 
 ## Local setup
 
@@ -52,7 +68,12 @@ php artisan db:seed --class=PlatformRoleSeeder --database=platform
 php artisan platform:create-admin
 ```
 
-5. For tests, ensure `.env.testing` (or `phpunit.xml`) uses `PLATFORM_DB_DATABASE=laravelai_platform_testing` with valid MySQL credentials. Tests refuse to run against the live platform database.
+5. For tests:
+   - Create MySQL database `laravelai_platform_testing`
+   - Put credentials in **`.env.testing`** (gitignored) — never commit MySQL passwords
+   - `phpunit.xml` forces `PLATFORM_DB_DATABASE=laravelai_platform_testing` but not passwords
+   - CI must inject DB credentials via environment/secrets
+   - Tests abort if the platform connection points at a non-testing database name
 
 ## Development commands
 

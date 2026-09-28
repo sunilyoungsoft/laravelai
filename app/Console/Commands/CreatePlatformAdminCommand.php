@@ -11,11 +11,11 @@ class CreatePlatformAdminCommand extends Command
 {
     protected $signature = 'platform:create-admin';
 
-    protected $description = 'Interactively create the first Platform Admin user and assign the Admin role';
+    protected $description = 'Bootstrap the first Platform Admin user (one-time only)';
 
     public function handle(CreatePlatformAdminService $service): int
     {
-        $this->info('Create Platform Admin');
+        $this->info('Create Platform Admin (bootstrap only)');
         $this->newLine();
 
         $name = (string) $this->ask('Name');

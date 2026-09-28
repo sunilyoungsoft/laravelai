@@ -18,12 +18,13 @@ class PlatformRole extends Model
 
     protected $table = 'platform_roles';
 
+    /**
+     * is_system and status are not mass assignable — set only by trusted system code.
+     */
     protected $fillable = [
         'name',
         'slug',
         'description',
-        'is_system',
-        'status',
     ];
 
     protected function casts(): array

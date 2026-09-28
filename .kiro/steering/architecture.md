@@ -1,0 +1,82 @@
+---
+inclusion: always
+---
+
+# Core Architecture Rules
+
+You are working on a modular, multi-tenant ERP SaaS platform.
+
+The system consists of:
+
+Platform Core
+Module System
+Platform Database
+Workspace Databases
+API Layer
+Event System
+Queue System
+Frontend
+
+## Architecture Principles
+
+- Keep the Core stable.
+- Business functionality must live inside modules under `Modules/{ModuleName}`.
+- Shared/core functionality lives under `app/`.
+- Modules must remain independently maintainable.
+- Avoid unnecessary coupling between modules.
+- Prefer contracts/events over direct module-to-module dependencies.
+- Keep controllers thin.
+- Keep business logic out of controllers.
+- Prefer Service classes for meaningful application/business operations.
+- Use Actions only when a single-purpose use-case object is clearly clearer than a Service.
+- Use dependency injection.
+- Follow SOLID principles where they provide real value.
+- Do not introduce patterns merely for the sake of patterns.
+- Do not introduce microservices.
+
+## Layers
+
+Prefer:
+
+Presentation
+    ↓
+Application
+    ↓
+Domain
+    ↓
+Infrastructure
+
+Presentation:
+- Controllers
+- API Controllers
+- Inertia pages
+
+Application:
+- Services
+- DTOs
+- Application workflows
+- Actions (only when justified)
+
+Domain:
+- Business rules
+- Domain events
+- Contracts
+
+Infrastructure:
+- Eloquent
+- Database
+- External APIs
+- Queues
+- Storage
+
+## Important
+
+Before making architectural changes:
+
+1. Inspect existing implementation.
+2. Understand dependencies.
+3. Check existing conventions.
+4. Avoid breaking existing modules.
+5. Explain significant architectural changes before implementing them.
+
+Do not rewrite working architecture without a clear reason.

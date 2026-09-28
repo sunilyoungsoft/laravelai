@@ -1,0 +1,67 @@
+---
+inclusion: fileMatch
+fileMatchPattern: ['**/Api/**', '**/routes/api.php']
+---
+
+# API Standards
+
+The platform is API-first.
+
+Business modules should expose APIs where appropriate.
+
+Use versioned APIs:
+
+/api/v1/...
+
+## API Controllers
+
+API controllers should remain thin.
+
+Prefer:
+
+API Controller
+    ↓
+Action / Service
+    ↓
+Domain/Application Logic
+    ↓
+Infrastructure
+
+Do not duplicate business logic between:
+
+- Web controllers
+- API controllers
+
+## API Requirements
+
+Support where appropriate:
+
+- authentication
+- authorization
+- validation
+- pagination
+- filtering
+- sorting
+- consistent errors
+- consistent responses
+- rate limiting
+- API versioning
+
+## Security
+
+Every API request must:
+
+1. Authenticate the user.
+2. Resolve the tenant.
+3. Authorize the operation.
+4. Execute inside tenant context.
+
+Never trust tenant IDs supplied directly by clients.
+
+Tenant must come from authenticated/contextual tenant resolution.
+
+## Versioning
+
+Do not introduce breaking API changes into an existing version.
+
+Use a new API version for breaking changes.

@@ -18,11 +18,13 @@ class PlatformPermission extends Model
 
     protected $table = 'platform_permissions';
 
+    /**
+     * status is not mass assignable — set only by trusted system code.
+     */
     protected $fillable = [
         'name',
         'slug',
         'description',
-        'status',
     ];
 
     protected function casts(): array

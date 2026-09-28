@@ -1,0 +1,104 @@
+---
+inclusion: always
+---
+
+# Module Architecture
+
+Business functionality must be implemented as modules under:
+
+Modules/{ModuleName}/
+
+Shared/core functionality remains under app/.
+
+
+- Task
+- CRM
+- Sales
+- Purchase
+- Inventory
+- Invoice
+- HRMS
+- Payroll
+- Accounting
+
+## Module Independence
+
+A module should own its:
+
+- Controllers
+- API
+- Models
+- Services
+- Actions
+- DTOs
+- Policies
+- Requests
+- Events
+- Listeners
+- Jobs
+- Notifications
+- Routes
+- Migrations
+- Seeders
+- Config
+- Resources
+- Tests
+
+Only create folders that are actually required.
+
+## Module Communication
+
+Avoid direct access to another module's internal implementation.
+
+Prefer:
+
+Module A
+    ↓
+Event / Contract
+    ↓
+Module B
+
+Example:
+
+InvoicePaid
+    ↓
+Accounting listener
+    ↓
+Notification listener
+
+## Module Lifecycle
+
+Modules must support:
+
+- install
+- enable
+- disable
+- update
+- uninstall
+
+Disabling a module must not automatically delete its data.
+
+Uninstalling must explicitly handle data removal.
+
+## Dependencies
+
+Modules may declare dependencies.
+
+The module manager must detect:
+
+- missing dependencies
+- incompatible versions
+- circular dependencies
+
+Never allow an invalid module state.
+
+## Business Logic
+
+Do not put module business logic inside:
+
+- routes
+- controllers
+- Blade/Inertia components
+- migrations
+
+Use Actions/Services/Domain logic appropriately.

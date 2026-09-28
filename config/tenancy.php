@@ -1,0 +1,114 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Models\Company;
+use Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper;
+use Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper;
+use Stancl\Tenancy\Database\Models\Domain;
+use Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager;
+use Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager;
+use Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager;
+
+return [
+    'tenant_model' => Company::class,
+    'id_generator' => null,
+
+    'domain_model' => Domain::class,
+
+    /**
+     * The list of domains hosting your central app.
+     *
+     * Only relevant if you're using the domain or subdomain identification middleware.
+     */
+    'central_domains' => [
+        '127.0.0.1',
+        'localhost',
+    ],
+
+    /**
+     * Spike bootstrappers only: database switching + queue tenant payload.
+     * Cache/filesystem/Redis tenancy are intentionally disabled.
+     */
+    'bootstrappers' => [
+        DatabaseTenancyBootstrapper::class,
+        QueueTenancyBootstrapper::class,
+    ],
+
+    /**
+     * Database tenancy config. Used by DatabaseTenancyBootstrapper.
+     */
+    'database' => [
+        'central_connection' => 'platform',
+
+        /**
+         * Connection used as a "template" for the dynamically created tenant database connection.
+         * Note: don't name your template connection tenant. That name is reserved by package.
+         */
+        'template_tenant_connection' => 'workspace',
+
+        /**
+         * Not used when Company maps getInternal('db_name') to database_name.
+         * Kept empty so Stancl cannot invent an alternate naming convention.
+         */
+        'prefix' => '',
+        'suffix' => '',
+
+        /**
+         * TenantDatabaseManagers are classes that handle the creation & deletion of tenant databases.
+         * Spike does not call CreateDatabase; managers remain for connection config only.
+         */
+        'managers' => [
+            'sqlite' => SQLiteDatabaseManager::class,
+            'mysql' => MySQLDatabaseManager::class,
+            'mariadb' => MySQLDatabaseManager::class,
+            'pgsql' => PostgreSQLDatabaseManager::class,
+        ],
+    ],
+
+    'cache' => [
+        'tag_base' => 'tenant',
+    ],
+
+    'filesystem' => [
+        'suffix_base' => 'tenant',
+        'disks' => [
+            'local',
+            'public',
+        ],
+        'root_override' => [
+            'local' => '%storage_path%/app/',
+            'public' => '%storage_path%/app/public/',
+        ],
+        'suffix_storage_path' => true,
+        'asset_helper_tenancy' => true,
+    ],
+
+    'redis' => [
+        'prefix_base' => 'tenant',
+        'prefixed_connections' => [],
+    ],
+
+    'features' => [],
+
+    /**
+     * Disable package tenant asset routes for this spike.
+     */
+    'routes' => false,
+
+    /**
+     * Test-only: allow CREATE/DROP of workspace_{ulid} databases in the spike suite.
+     * Enabled via phpunit.xml; never enable against a live platform database.
+     */
+    'spike_allow_test_databases' => (bool) env('TENANCY_SPIKE_ALLOW_TEST_DATABASES', false),
+
+    'migration_parameters' => [
+        '--force' => true,
+        '--path' => [database_path('migrations/tenant')],
+        '--realpath' => true,
+    ],
+
+    'seeder_parameters' => [
+        '--class' => 'DatabaseSeeder',
+    ],
+];

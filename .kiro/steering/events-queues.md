@@ -1,0 +1,71 @@
+---
+inclusion: fileMatch
+fileMatchPattern: ['**/Events/**', '**/Listeners/**', '**/Jobs/**']
+---
+
+# Events
+
+Use application/domain events to reduce module coupling.
+
+Examples:
+
+- CustomerCreated
+- SaleCompleted
+- PurchaseApproved
+- InvoicePaid
+- TaskCompleted
+- EmployeeJoined
+
+## Event Design
+
+Events should represent something that happened.
+
+Good:
+
+InvoicePaid
+
+Avoid events that represent vague implementation details.
+
+## Module Communication
+
+Prefer:
+
+Module A
+    ↓
+Event
+    ↓
+Module B
+
+instead of:
+
+Module A
+    ↓
+Directly call Module B internals
+
+## Transactions
+
+Important events should be dispatched only after the relevant transaction has successfully committed when appropriate.
+
+Do not publish events that describe successful operations before the database transaction is safely committed.
+
+# Queues
+
+Use queues for expensive or asynchronous operations.
+
+Examples:
+
+- PDF generation
+- email
+- notifications
+- imports
+- exports
+- reports
+- external API calls
+
+Tenant-specific jobs must restore TenantContext before accessing tenant data.
+
+Jobs should be idempotent where practical.
+
+Handle retries and failures safely.
+
+Never allow a failed job to accidentally process another tenant.

@@ -22,13 +22,15 @@ class PlatformRoleSeeder extends Seeder
             ->first();
 
         if ($role === null) {
-            PlatformRole::on('platform')->create([
+            $role = new PlatformRole;
+            $role->setConnection('platform');
+            $role->forceFill([
                 'name' => 'Admin',
                 'slug' => 'admin',
                 'description' => 'Protected platform system administrator role.',
                 'is_system' => true,
                 'status' => 1,
-            ]);
+            ])->save();
 
             return;
         }

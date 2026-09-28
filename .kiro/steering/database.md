@@ -1,11 +1,6 @@
 ---
-description: Database architecture and migration standards
-alwaysApply: false
-globs:
-  - "**/database/migrations/**"
-  - "**/Migrations/**"
-  - "**/Models/**"
-  - "**/models/**"
+inclusion: fileMatch
+fileMatchPattern: ['**/database/migrations/**', '**/Migrations/**', '**/Models/**', '**/models/**']
 ---
 
 # Database Rules
@@ -34,17 +29,13 @@ Do not use cascade deletes unless explicitly approved.
 ## Soft-delete identity policy (Platform)
 
 Unique identity fields remain reserved after soft delete. Do **not** mutate
-email/phone/slug/database_name on delete, remove unique indexes, or create a
-replacement row with the same identity.
+email/phone/slug on delete, remove unique indexes, or create a replacement
+row with the same identity.
 
 - `platform_users.email` and `platform_users.phone` stay unique including soft-deleted rows.
   Restore the existing Platform User when that person needs access again.
 - `platform_roles.slug` and `platform_permissions.slug` stay unique including soft-deleted rows.
   Restore the existing role/permission when the same logical identity is required again.
-- `companies.slug` and `companies.database_name` stay unique including soft-deleted rows.
-  Restore the existing Company when the same identity is required again.
-  Company ULID and `database_name` (`workspace_{ulid}`) are stable internal identities.
-  `slug` is the public/platform identifier; rename policy is not decided yet.
 
 ## Platform Admin role
 

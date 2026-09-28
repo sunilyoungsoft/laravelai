@@ -122,6 +122,42 @@ class PlatformRbacTest extends TestCase
         PlatformUser::factory()->create(['phone' => '9800000001']);
     }
 
+    public function test_soft_deleted_user_email_remains_reserved(): void
+    {
+        $user = PlatformUser::factory()->create(['email' => 'reserved@example.com']);
+        $user->delete();
+
+        $this->expectException(QueryException::class);
+        PlatformUser::factory()->create(['email' => 'reserved@example.com']);
+    }
+
+    public function test_soft_deleted_user_phone_remains_reserved(): void
+    {
+        $user = PlatformUser::factory()->create(['phone' => '9800000099']);
+        $user->delete();
+
+        $this->expectException(QueryException::class);
+        PlatformUser::factory()->create(['phone' => '9800000099']);
+    }
+
+    public function test_soft_deleted_role_slug_remains_reserved(): void
+    {
+        $role = PlatformRole::factory()->create(['slug' => 'support']);
+        $role->delete();
+
+        $this->expectException(QueryException::class);
+        PlatformRole::factory()->create(['slug' => 'support']);
+    }
+
+    public function test_soft_deleted_permission_slug_remains_reserved(): void
+    {
+        $permission = PlatformPermission::factory()->create(['slug' => 'companies.view']);
+        $permission->delete();
+
+        $this->expectException(QueryException::class);
+        PlatformPermission::factory()->create(['slug' => 'companies.view']);
+    }
+
     public function test_models_use_the_platform_connection(): void
     {
         $this->assertSame('platform', (new PlatformUser)->getConnectionName());
@@ -143,9 +179,9 @@ class PlatformRbacTest extends TestCase
 
     public function test_two_factor_secret_is_stored_encrypted(): void
     {
-        $user = PlatformUser::factory()->create([
-            'two_factor_secret' => 'plain-secret-value',
-        ]);
+        $user = PlatformUser::factory()->create();
+        $user->two_factor_secret = 'plain-secret-value';
+        $user->save();
 
         $raw = DB::connection('platform')
             ->table('platform_users')

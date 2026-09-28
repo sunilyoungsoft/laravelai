@@ -20,23 +20,15 @@ class PlatformUser extends Authenticatable
 
     protected $table = 'platform_users';
 
+    /**
+     * Only identity/credential fields are mass assignable.
+     * Security and lifecycle state must be set explicitly by trusted code.
+     */
     protected $fillable = [
         'name',
         'email',
         'phone',
         'password',
-        'email_verified_at',
-        'status',
-        'failed_login_attempts',
-        'is_locked',
-        'locked_until',
-        'last_failed_login',
-        'last_login_at',
-        'two_factor_enabled',
-        'two_factor_secret',
-        'two_factor_confirmed_at',
-        'created_by',
-        'updated_by',
     ];
 
     protected $hidden = [

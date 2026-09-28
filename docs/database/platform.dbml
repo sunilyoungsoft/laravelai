@@ -1,6 +1,17 @@
-// Platform database schema — Phase 1B
+// Platform database schema — Phase 1C
 // Update this file whenever platform_db schema changes.
 // Do not document workspace databases here.
+//
+// Soft-delete identity policy:
+// - platform_users.email and platform_users.phone remain reserved after soft delete.
+// - platform_roles.slug and platform_permissions.slug remain reserved after soft delete.
+// - companies.slug and companies.database_name remain reserved after soft delete.
+// Restore the existing record instead of creating a duplicate identity.
+//
+// Company identities:
+// - id (ULID) and database_name are stable internal identities.
+// - database_name format: workspace_{lowercase_ulid} (metadata only in Phase 1C; no physical DB yet).
+// - slug is the public/platform identifier; future rename policy is not decided.
 
 Table platform_users {
   id ulid [pk]
@@ -80,9 +91,41 @@ Table platform_role_permissions {
   Note: 'Many-to-many: PlatformRole ↔ PlatformPermission. FK deletes: NO ACTION.'
 }
 
+Table companies {
+  id ulid [pk]
+  name varchar
+  slug varchar(63) [unique, not null]
+  database_name varchar(64) [unique, not null, note: 'workspace_{lowercase_ulid}; no physical DB in Phase 1C']
+  contact_person varchar [null]
+  email varchar [null]
+  secondary_email varchar [null]
+  phone varchar [null]
+  gst_number varchar [null, note: 'nullable; NOT unique']
+  address_line_1 varchar [null]
+  address_line_2 varchar [null]
+  city varchar [null]
+  state varchar [null]
+  country_code char(2) [null]
+  postal_code varchar [null]
+  status varchar [default: 'pending', note: 'CompanyStatus string enum; indexed']
+  created_by ulid [not null]
+  updated_by ulid [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+
+  indexes {
+    status [name: 'companies_status_index']
+  }
+
+  Note: 'Platform SaaS customer/workspace registry. Soft deletes enabled. FK deletes: NO ACTION. No Workspace DB provisioning in Phase 1C.'
+}
+
 Ref: platform_users.created_by > platform_users.id [delete: no action]
 Ref: platform_users.updated_by > platform_users.id [delete: no action]
 Ref: platform_user_roles.user_id > platform_users.id [delete: no action]
 Ref: platform_user_roles.role_id > platform_roles.id [delete: no action]
 Ref: platform_role_permissions.role_id > platform_roles.id [delete: no action]
 Ref: platform_role_permissions.permission_id > platform_permissions.id [delete: no action]
+Ref: companies.created_by > platform_users.id [delete: no action]
+Ref: companies.updated_by > platform_users.id [delete: no action]
