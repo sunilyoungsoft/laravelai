@@ -48,6 +48,8 @@ Not included yet: Domains, Workspace DB provisioning, Workspace users/RBAC, subs
 
 **Tenancy spike:** Stancl (`stancl/tenancy` v3.10.1) was evaluated as infrastructure with Company as the tenant entity. Findings: [`docs/architecture/tenancy-spike.md`](docs/architecture/tenancy-spike.md).
 
+**Application layer proof:** `Modules/Demo` demonstrates Web/API → Request → DTO → Action without duplicating business logic. See [`docs/architecture/application-layer.md`](docs/architecture/application-layer.md). Real CRM Customers wait for Workspace DB provisioning.
+
 ## Local setup
 
 1. Use PHP **8.4**.

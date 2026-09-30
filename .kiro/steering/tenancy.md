@@ -53,18 +53,31 @@ Never silently fall back to the Master Database.
 
 Missing tenant context must fail safely.
 
-## Database Switching
+## Database switching (owned by Stancl)
 
-Use a centralized TenantManager for:
+Tenancy infrastructure is `stancl/tenancy` (see `docs/architecture/tenancy-spike.md`).
+Stancl owns:
 
-- resolving tenant
-- loading database configuration
-- switching database
-- reconnecting
-- disconnecting
-- restoring connection
+- tenant context initialize / end
+- loading the tenant database connection configuration
+- switching the default connection to the dynamic `tenant` connection while initialized
+- reconnecting / restoring the default connection back to `platform` on end
+- injecting the tenant key into queued job payloads and re-initializing at job time
 
-Do not manually switch databases throughout controllers or services.
+Do not build a custom `TenantManager` or manually switch databases in controllers,
+services, or actions for these responsibilities. Enter tenant context through Stancl
+(e.g. `tenancy()->initialize($company)` / `tenancy()->end()` or the provided run helper).
+
+The application owns (not Stancl):
+
+- `Company` as the tenant/SaaS customer registry
+- `database_name` generation (`workspace_{lowercase_company_ulid}`)
+- Company lifecycle / status
+- future Domains, provisioning (create/migrate/drop workspace databases), subscriptions,
+  and Workspace users/RBAC
+
+The `platform` connection is permanently central and must be named explicitly on Platform
+models/queries, because while tenancy is initialized the default connection is `tenant`.
 
 ## Security
 

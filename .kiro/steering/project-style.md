@@ -4,309 +4,117 @@ inclusion: always
 
 # Project Coding Style
 
-This project follows a simple, readable, maintainable coding style.
+Optimize every choice for one goal: code that is easy for a human to read, understand,
+debug, test, and maintain. Follow **KISS** — prefer simple, explicit code over clever or
+overly abstract code. Fewer lines is not the goal; understanding is.
 
-The primary goal is:
+When style and correctness conflict, correctness wins (see "Security & correctness first").
 
-> Code should be easy for a human developer to read, understand, debug, test, and maintain.
+## Action-First Business Logic
 
-Follow:
+This project is **Action-first**: a meaningful business/application operation is an Action
+(e.g. `CreateCustomerAction`, `PostInvoiceAction`, `ProvisionWorkspaceAction`). Web, API,
+AI, and CLI entry points converge on the same Action. `development-rules.md` is
+authoritative for the application layer; this file covers coding style within it.
 
-**KISS — Keep It Simple, Stupid.**
+Controllers, Commands, Jobs, Listeners, and Routes must stay thin and delegate meaningful
+work. Never place complex business logic directly in them.
 
-Prefer simple and explicit code over clever or overly abstract code.
-
----
-
-# 1. Service-First Business Logic
-
-Whenever implementing a business/application operation, create or use a Service class.
-
-Examples:
-
-* BackupService
-* InvoiceService
-* PurchaseService
-* PaymentService
-* EmployeeService
-* NotificationService
-* TenantService
-
-Controllers, Commands, Jobs, and Listeners should delegate meaningful work to Services.
-
-Prefer:
-
-```php
-Controller
-    ↓
-Service
-    ↓
-Repository / Model
+```
+Controller / Command
+    → Form Request / boundary validation
+    → DTO
+    → Action
+    → Models / domain services
 ```
 
-or:
+Use a **Service** only for a genuine shared domain responsibility reused across Actions
+(e.g. `NotificationService`, an external-integration service). It is not the default
+container for every operation.
 
-```php
-Command
-    ↓
-Service
-    ↓
-Repository / Model
-```
+## Small Functions That Read as a Story
 
-Do not place complex business logic directly inside:
-
-* Controllers
-* Commands
-* Jobs
-* Listeners
-* Routes
-
----
-
-# 2. Small Functions
-
-Avoid large functions.
-
-If a function is doing multiple things, divide it into small functions with clear responsibilities.
-
-Bad:
-
-```php
-public function backup()
-{
-    // find database
-    // create backup
-    // upload backup
-    // save URL
-    // send notification
-    // logging
-    // error handling
-}
-```
-
-Prefer:
-
-```php
-public function backup(): string
-{
-    $database = $this->selectDatabase();
-    $backupFile = $this->createBackup($database);
-    $backupUrl = $this->uploadBackup($backupFile);
-
-    return $this->storeBackupUrl($backupUrl);
-}
-```
-
-The main function should tell the story of the operation.
-
-A developer should be able to understand the workflow without reading every implementation detail.
-
----
-
-# 3. Main Function as an Orchestrator
-
-When an operation contains multiple steps, the main method should orchestrate those steps.
-
-Example:
+Keep functions small and single-purpose. The main method should orchestrate named steps
+so the workflow is clear without reading every implementation detail.
 
 ```php
 public function execute(): BackupResult
 {
     $database = $this->selectDatabase();
     $backupFile = $this->takeBackup($database);
-    $backupUrl = $this->storeBackup($backupFile);
+    $backupUrl = $this->uploadBackup($backupFile);
 
     return $this->saveBackupRecord($backupUrl);
 }
 ```
 
-Each method should have one clear responsibility.
+Split a function when it does multiple unrelated things. A function should have one clear
+reason to change. Push asynchronous side effects (PDF generation, email, audit log) into
+listeners/jobs triggered by an event rather than inlining them.
 
-Prefer:
+There is no hard line limit, but if a method needs significant scrolling or mixes
+unrelated responsibilities, split it.
 
-```text
-execute()
-    ↓
-selectDatabase()
-    ↓
-takeBackup()
-    ↓
-storeBackup()
-    ↓
-saveBackupRecord()
-```
+## Naming
 
-over one large function.
+Names must explain intent: `selectTenantDatabase()`, `createBackupFile()`,
+`saveBackupRecord()`. 
+Avoid vague names such as `process()`, `doIt()`, `executeStuff()`, and
+`helper()` when they do not communicate intent.
 
----
+Framework-required method names such as Laravel's `handle()` are acceptable
+when required by the framework contract.
 
-# 4. Single Responsibility
+Names such as `run()` or `execute()` are acceptable when the surrounding class
+makes the operation clear.
 
-A function should have one clear reason to change.
+## Readability Over Cleverness
 
-Bad:
+Prefer several simple lines over a clever one-liner. Avoid dense chains
+(`collect(...)->filter(...)->map(...)->reduce(...)`) when a plain loop is clearer.
 
-```php
-createInvoice()
-```
+## Avoid Deep Nesting
 
-which:
-
-* validates customer
-* calculates tax
-* calculates discount
-* creates invoice
-* sends email
-* generates PDF
-* records audit log
-* updates accounting
-
-Prefer:
-
-```text
-createInvoice()
-    ↓
-validateInvoice()
-    ↓
-calculateTotals()
-    ↓
-saveInvoice()
-    ↓
-dispatchInvoiceCreated()
-```
-
-Listeners/jobs can handle asynchronous operations such as:
-
-```text
-InvoiceCreated
-    ↓
-Generate PDF
-Send Email
-Create Audit Log
-```
-
----
-
-# 5. Readability Over Cleverness
-
-Do not optimize for fewer lines of code.
-
-Optimize for understanding.
-
-Avoid unnecessarily clever:
+Use guard clauses, early returns, and small methods instead of nested `if` pyramids.
 
 ```php
-return collect($items)->filter(...)->map(...)->reduce(...);
+if (! $tenant) {
+    throw new TenantNotFoundException();
+}
+
+if (! $tenant->isActive()) {
+    throw new TenantInactiveException();
+}
+
+return $this->process($tenant);
 ```
 
-when a simple loop would be easier to understand.
+## Logging
 
-Do not use complicated one-liners when several simple lines are clearer.
-
-Prefer explicit code.
-
----
-
-# 6. Naming
-
-Names must explain intent.
-
-Prefer:
-
-```php
-selectTenantDatabase()
-createBackupFile()
-uploadBackupFile()
-saveBackupRecord()
-```
-
-Avoid:
-
-```php
-process()
-handle()
-doIt()
-run()
-executeStuff()
-helper()
-```
-
-Generic names are acceptable only when their context makes the responsibility obvious.
-
----
-
-# 7. Logging
-
-Important application operations must have useful logs.
-
-Log important lifecycle points:
-
-```text
-Started
-Completed
-Failed
-```
-
-Example:
-
-```php
-Log::info('Database backup started', [
-    'tenant_id' => $tenantId,
-]);
-```
-
-On success:
+Log meaningful business/application boundaries — Started, Completed, Failed — not every
+small method.
 
 ```php
 Log::info('Database backup completed', [
     'tenant_id' => $tenantId,
-    'backup_url' => $backupUrl,
+    'backup_id' => $backupId,
 ]);
 ```
+Log meaningful business/application boundaries when operational visibility
+requires it. Do not log every method call or routine operation.
 
-On failure:
+For important operations, logging may include Started, Completed, and Failed
+events as appropriate.
 
-```php
-Log::error('Database backup failed', [
-    'tenant_id' => $tenantId,
-    'exception' => $exception->getMessage(),
-]);
-```
+## Error Handling
 
-Do not log sensitive information.
-
-Never log:
-
-* passwords
-* API secrets
-* access tokens
-* database passwords
-* private keys
-* sensitive personal information unnecessarily
-
----
-
-# 8. Error Handling
-
-Errors must be handled at the appropriate boundary.
-
-Do not silently ignore exceptions.
-
-Bad:
+Handle errors at the appropriate boundary. Never swallow exceptions with an empty `catch`.
+Only catch when there is something meaningful to do; log with context and rethrow when you
+cannot fully recover.
 
 ```php
 try {
-    ...
-} catch (\Exception $e) {
-}
-```
-
-Prefer:
-
-```php
-try {
-    ...
+    // ...
 } catch (\Throwable $exception) {
     Log::error('Database backup failed', [
         'tenant_id' => $tenantId,
@@ -317,430 +125,104 @@ try {
 }
 ```
 
-Only catch exceptions when there is something meaningful to do.
+For important operations, follow: start → execute → log success, or on failure log the
+error and handle/throw.
 
-Do not catch an exception just to hide it.
+## Comments
 
----
-
-# 9. Logging + Error Handling
-
-For important operations, use this pattern:
-
-```text
-Start
-  ↓
-Execute
-  ↓
-Success → Log success
-  ↓
-Failure → Log error → Handle/throw
-```
-
-Do not add excessive logging to every small method.
-
-Log meaningful business/application boundaries.
-
----
-
-# 10. Example: Database Backup
-
-Preferred architecture:
+Code explains **what**; comments explain **why**. Skip narrating obvious lines. Reserve
+comments for non-obvious decisions.
 
 ```php
-class DatabaseBackupService
-{
-    public function backup(): BackupResult
-    {
-        $database = $this->selectDatabase();
-        $backupFile = $this->takeBackup($database);
-        $backupUrl = $this->uploadBackup($backupFile);
-
-        return $this->saveBackupRecord($backupUrl);
-    }
-}
+// Backup must run against the tenant database, never the platform database.
 ```
 
-Methods:
+If code is hard to understand, improve the code before adding a comment.
 
-```text
-selectDatabase()
-takeBackup()
-uploadBackup()
-saveBackupRecord()
-```
+## Keep Classes and Actions/Services Focused
 
-The cron command should remain very small:
 
-```php
-public function handle(DatabaseBackupService $backupService): int
-{
-    $backupService->backup();
+Action-first does not mean one giant class. Keep Actions and shared Services
+focused on one clear responsibility.
 
-    return self::SUCCESS;
-}
-```
+Split when responsibilities become unrelated.
 
-The cron command schedules the operation.
+For example, an Action such as `PostInvoiceAction` should not also contain
+payment processing, PDF generation, file management, and notification logic.
 
-The Service performs the operation.
+If invoice calculation or payment logic is genuinely reused across multiple
+Actions, it may belong in appropriately named shared domain services such as
+`InvoiceCalculationService` or `InvoicePaymentService`.
 
----
+Do not let a class become a dumping ground for database access, API calls,
+notifications, calculations, file management, and unrelated business rules.
 
-# 11. Avoid Giant Services
+## Don't Over-Abstract
 
-"Always use a Service" does NOT mean:
+Do not auto-create an Interface, Repository, Factory, Strategy, Manager, Helper, Utility,
+or Adapter for every class. Add an abstraction only when it solves a real problem:
+multiple implementations, external integrations, testing boundaries, module boundaries, or
+infrastructure isolation.
 
-```text
-MegaService.php
-    5000 lines
-```
+Avoid catch-all classes like `Helper.php`, `CommonHelper.php`, `Utility.php`,
+`GlobalFunctions.php`. Put behavior where it belongs — prefer `InvoiceNumberService::generate()`
+over `Helper::formatInvoiceNumber()`.
 
-Services must also remain small and focused.
+## Don't Repeat Business Logic
 
-Prefer:
+If the same rule (e.g. `calculateTax()`) is needed in multiple places, give it one owner
+and reuse it. Never copy/paste business logic across controllers.
 
-```text
-TenantService
-TenantProvisioningService
-TenantDatabaseService
+## Dependency Injection
 
-InvoiceService
-InvoiceCalculationService
-InvoicePaymentService
-
-BackupService
-BackupStorageService
-BackupCleanupService
-```
-
-Split a Service when its responsibilities become unrelated or difficult to understand.
-
----
-
-# 12. Don't Create Abstractions Without a Reason
-
-Do not automatically create:
-
-```text
-Interface
-Repository
-Factory
-Strategy
-Manager
-Helper
-Utility
-Adapter
-```
-
-for every class.
-
-Create abstractions when they solve a real problem such as:
-
-* multiple implementations
-* external integrations
-* testing boundaries
-* module boundaries
-* infrastructure isolation
-
-Simple code is preferred.
-
----
-
-# 13. Avoid Generic Helper Classes
-
-Avoid:
-
-```text
-Helper.php
-CommonHelper.php
-Utility.php
-GlobalFunctions.php
-```
-
-Instead, put functionality where it belongs.
-
-Example:
-
-Bad:
-
-```php
-Helper::formatInvoiceNumber();
-```
-
-Prefer:
-
-```php
-InvoiceNumberService::generate();
-```
-
-or an appropriate domain/application component.
-
----
-
-# 14. Don't Repeat Business Logic
-
-If the same business rule is used in multiple places, identify the correct owner and reuse it.
-
-Do not copy/paste:
-
-```php
-calculateTax()
-```
-
-into:
-
-* InvoiceController
-* SalesController
-* PurchaseController
-
-Create the appropriate shared business component.
-
----
-
-# 15. Comments
-
-Code should explain WHAT.
-
-Comments should explain WHY.
-
-Avoid:
-
-```php
-// Get database
-$database = $this->selectDatabase();
-```
-
-Prefer comments only for non-obvious decisions:
-
-```php
-// Backup must run against the tenant database,
-// never the platform database.
-```
-
-Do not use comments to compensate for unclear code.
-
-If the code is difficult to understand, improve the code first.
-
----
-
-# 16. Avoid Deep Nesting
-
-Avoid:
-
-```php
-if (...) {
-    if (...) {
-        if (...) {
-            if (...) {
-                ...
-            }
-        }
-    }
-}
-```
-
-Prefer:
-
-* guard clauses
-* early returns
-* small methods
-
-Example:
-
-```php
-if (!$tenant) {
-    throw new TenantNotFoundException();
-}
-
-if (!$tenant->isActive()) {
-    throw new TenantInactiveException();
-}
-
-return $this->process($tenant);
-```
-
----
-
-# 17. Method Length
-
-There is no arbitrary hard limit on lines.
-
-However, if a method requires significant scrolling or contains multiple unrelated responsibilities, consider splitting it.
-
-The goal is:
-
-> A developer should understand the method's purpose quickly.
-
----
-
-# 18. Class Length
-
-Do not allow classes to become dumping grounds.
-
-If a class starts handling:
-
-* database operations
-* API calls
-* notifications
-* calculations
-* file management
-* business rules
-
-split responsibilities into appropriate classes.
-
----
-
-# 19. Dependency Injection
-
-Prefer dependency injection.
-
-Example:
+Inject dependencies via the constructor; let Laravel's container resolve them. Avoid
+manually newing services inside business logic (`new SomeService()`).
 
 ```php
 public function __construct(
     private BackupStorageService $storage,
     private BackupRepository $repository,
-) {
-}
+) {}
 ```
+## External Services
 
-Avoid creating dependencies manually throughout business logic:
+Isolate external APIs and infrastructure behind dedicated services.
 
-```php
-$service = new SomeService();
-```
+Prefer names that identify the responsibility or integration, for example:
 
-Use Laravel's container where appropriate.
+- `FortisPaymentService`
+- `S3StorageService`
 
----
+Do not scatter raw HTTP requests or infrastructure-specific calls through
+controllers or unrelated business classes.
 
-# 20. External Services
+## Database Access & Transactions
 
-External APIs must be isolated behind dedicated services.
+Keep data access readable: prefer Eloquent, Query Builder, or a dedicated query class for
+genuinely complex queries over large raw SQL. Always consider N+1 queries, indexes,
+locking, and performance. Transactions must be explicit where atomicity is required. Do not introduce a
+global `BaseAction` transaction wrapper that automatically wraps every Action.
+(e.g. create invoice + items + payment + ledger update) in an explicit transaction.
 
-Example:
+## Security & Correctness First
 
-```text
-PaymentService
-    ↓
-FortisService
+Readability matters, but never simplify in a way that weakens authentication,
+authorization, tenant isolation, validation, data integrity, encryption, or auditability.
 
-WhatsAppService
-    ↓
-WhatsApp API
-
-StorageService
-    ↓
-S3
-```
-
-Do not scatter HTTP requests throughout controllers or business classes.
-
----
-
-# 21. Database Access
-
-Keep database access readable.
-
-Avoid massive raw SQL queries unless they provide a real benefit.
-
-Prefer:
-
-* Eloquent
-* Query Builder
-* dedicated query classes for genuinely complex queries
-
-Always consider:
-
-* N+1 queries
-* indexes
-* transactions
-* locking
-* query performance
-
----
-
-# 22. Transactions
-
-If an operation modifies multiple records that must succeed together, use a transaction.
-
-Example:
-
-```text
-Create Invoice
-    ↓
-Create Items
-    ↓
-Create Payment
-    ↓
-Update Ledger
-```
-
-These operations should be atomic when required by the business rule.
-
----
-
-# 23. Security Must Override Style
-
-Readable code is important, but security and correctness come first.
-
-Never simplify code in a way that compromises:
-
-* authentication
-* authorization
-* tenant isolation
-* validation
-* data integrity
-* encryption
-* auditability
-
----
-
-# 24. Before Writing New Code
-
-Before implementing a feature:
+## Before Writing New Code
 
 1. Understand the requirement.
-2. Inspect existing code.
-3. Check whether similar functionality already exists.
-4. Identify the correct module.
-5. Identify the correct Service.
-6. Check tenant implications.
-7. Implement the smallest clean solution.
-8. Add appropriate tests.
-9. Add meaningful logging where required.
-10. Run relevant tests.
-
-Do not create duplicate functionality.
-
----
-
-# 25. Final Principle
-
-Always prefer:
-
-```text
-Simple
-Readable
-Explicit
-Small
-Testable
-Maintainable
-```
-
-over:
-
-```text
-Clever
-Complex
-Highly abstract
-Compressed
-Over-engineered
-```
-
-The code should be understandable by another developer who did not write it.
+2. Inspect existing code; check whether similar functionality already exists (avoid duplicates).
+3. Identify the correct module.
+4. Identify the correct Action (or a shared Service, only for a genuine shared responsibility).
+5. Check tenant implications.
+6. Implement the smallest clean solution.
+7. Add appropriate tests and meaningful logging where required.
+8. Run the relevant tests.
 
 ## Golden Rule
 
-If a developer can read the main method and understand the complete workflow without opening every function, the code is probably structured well.
+Prefer simple, readable, explicit, small, testable, and maintainable code over clever,
+complex, highly abstract, compressed, or over-engineered code. If a developer can read the
+main method and understand the whole workflow without opening every function, the code is
+probably structured well.
