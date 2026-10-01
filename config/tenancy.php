@@ -27,6 +27,13 @@ return [
     ],
 
     /**
+     * Platform-managed base domain for tenant subdomains (e.g. "{label}.{base_domain}").
+     * NOT finalized for production — supplied via env so no real domain is hardcoded.
+     * Subdomain construction/validation fails safely when this is not configured.
+     */
+    'base_domain' => env('PLATFORM_BASE_DOMAIN'),
+
+    /**
      * Spike bootstrappers only: database switching + queue tenant payload.
      * Cache/filesystem/Redis tenancy are intentionally disabled.
      */

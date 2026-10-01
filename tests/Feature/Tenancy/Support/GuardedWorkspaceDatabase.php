@@ -36,6 +36,19 @@ final class GuardedWorkspaceDatabase
         ));
     }
 
+    /**
+     * Track a workspace database name that was created outside this helper (e.g. by the
+     * provisioning service under test) so dropTracked() cleans it up in tearDown.
+     */
+    public function trackExisting(string $databaseName): void
+    {
+        $this->assertSafe($databaseName);
+
+        if (! in_array($databaseName, $this->created, true)) {
+            $this->created[] = $databaseName;
+        }
+    }
+
     public function dropTracked(): void
     {
         foreach ($this->created as $databaseName) {

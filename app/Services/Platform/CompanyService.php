@@ -5,6 +5,7 @@ namespace App\Services\Platform;
 use App\Enums\CompanyStatus;
 use App\Models\Company;
 use App\Models\PlatformUser;
+use App\Support\Platform\ReservedLabels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -13,36 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class CompanyService
 {
-    /**
-     * Reserved public/platform slug values (simple in-service list).
-     *
-     * @var list<string>
-     */
-    private const RESERVED_SLUGS = [
-        'www',
-        'api',
-        'admin',
-        'platform',
-        'app',
-        'mail',
-        'ftp',
-        'localhost',
-        'staging',
-        'static',
-        'assets',
-        'cdn',
-        'status',
-        'health',
-        'auth',
-        'login',
-        'billing',
-        'support',
-        'docs',
-        'dashboard',
-        'system',
-        'root',
-    ];
-
     /**
      * System-managed fields that callers must not supply.
      *
@@ -147,7 +118,7 @@ class CompanyService
                 'min:2',
                 'max:63',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-                Rule::notIn(self::RESERVED_SLUGS),
+                Rule::notIn(ReservedLabels::all()),
                 'unique:platform.companies,slug',
             ],
             'contact_person' => ['nullable', 'string', 'max:255'],

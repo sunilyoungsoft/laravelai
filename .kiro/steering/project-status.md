@@ -40,25 +40,43 @@ Verified against the repository on 2026-09-30 (Kiro takeover).
   implements `TenantWithDatabase` via `App\Tenancy\Concerns\CompanyIsStanclTenant`,
   `config/tenancy.php` + `App\Providers\TenancyServiceProvider`, `tests/Feature/Tenancy/`.
   Findings + acceptance checklist (all YES) in `docs/architecture/tenancy-spike.md`.
+- **Phase 1D — Workspace Provisioning + Domains — COMPLETE.** Spec in
+  `.kiro/specs/phase-1d-workspace-provisioning-domains/` (OD-1…OD-5 confirmed). Delivered:
+  - Workspace migrations dir `database/migrations/tenant/` (+ `workspace_meta` sample).
+  - `WorkspaceDatabaseService` (create/exists/guarded-drop/migrate/pending-count via the
+    configured Stancl manager, DDL on the explicit `platform` connection).
+  - `ProvisionWorkspaceAction` (pending/failed→provisioning via conditional-UPDATE claim;
+    `active` rejected; suspended/deactivated/provisioning refused; delete+recreate on retry;
+    verify; failure→`provisioning_failed`, never `active`).
+  - Entry points: `workspace:provision` command + `ProvisionWorkspaceJob` (both call the same
+    Action; job carries the ULID, resolves on `platform`).
+  - Platform `domains` table + `Domain` model + `DomainType`/`DomainStatus` enums; `Hostname`
+    value object; `ReservedLabels` (extracted from `CompanyService`, shared);
+    `CreateDomainAction` / `SetPrimaryDomainAction` / `ActivateSubdomainAction`; configurable
+    `config('tenancy.base_domain')` (env `PLATFORM_BASE_DOMAIN`, unset by default).
+  - `ResolveCompanyByHostnameAction` (resolve-only, `platform`) + middleware
+    `InitializeTenancyByResolvedDomain` (alias `tenant.resolve`) initializing Stancl tenancy.
+  - `tests/Security/` isolation suite added (new PHPUnit `Security` testsuite).
 
-## Verification run (2026-09-30)
+## Verification run (Phase 1D)
 
-- `php artisan test` → **74 passed, 234 assertions** (run with PHP 8.4.25).
-- `vendor/bin/pint --test` → **passed** (72 files).
-- Note: the tenancy-spike doc still cites 64/193 (pre-existing; the suite has grown since).
+- `php artisan test` → **136 passed, 344 assertions** (PHP 8.4.25) — up from the 74 baseline.
+- `vendor/bin/pint --test` → **passed** (101 files).
 
 ## Not built yet
 
-Domains, Workspace DB provisioning (create/migrate/drop), Workspace users + Workspace RBAC,
-subscriptions, module-system runtime (install/enable/disable/update/uninstall), login UI,
-2FA flows, password reset. No business/ERP modules exist. AI/MCP not started.
+Workspace users + Workspace RBAC, subscriptions, module-system runtime
+(install/enable/disable/update/uninstall), login UI, 2FA flows, password reset. No business/ERP
+modules exist. AI/MCP not started. Custom-domain verification (DNS/SSL) is intentionally out of
+Phase 1D scope (future work).
 
 ## Actual next step
 
-**Provisioning + Domains design (Phase 1D+), NOT the tenancy spike** — the spike is already
-done. Next work should design workspace provisioning and the custom Domains table separately,
-without rewriting Platform RBAC or Companies, and without enabling Stancl `CreateDatabase` by
-default. Start with a Kiro Spec (requirements → design → tasks) before implementing.
+Phase 1D (provisioning + Domains) is done. Candidate next work: custom-domain verification
+transport (DNS/SSL) and/or Workspace users + Workspace RBAC. Note: Redis/Horizon queue-worker
+robustness and failed-job retry paths for provisioning are still **unproven** (only the sync
+driver is exercised) — verify before relying on queued provisioning in production. Start any
+significant next feature with a Kiro Spec.
 
 ## Environment notes
 

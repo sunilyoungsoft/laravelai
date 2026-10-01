@@ -121,6 +121,29 @@ Table companies {
   Note: 'Platform SaaS customer/workspace registry. Soft deletes enabled. FK deletes: NO ACTION. No Workspace DB provisioning in Phase 1C.'
 }
 
+Table domains {
+  id ulid [pk]
+  company_id ulid [not null]
+  domain varchar(253) [unique, not null, note: 'Normalized hostname (lowercased, trimmed, no trailing dot). Unique incl. soft-deleted (identity reserved).']
+  type varchar [not null, note: 'DomainType string enum: subdomain | custom']
+  is_primary boolean [default: false, note: 'At most one primary per company (enforced server-side in SetPrimaryDomainAction).']
+  status varchar [default: 'pending', note: 'DomainStatus string enum: pending | active | inactive | verification_failed; indexed']
+  verified_at timestamp [null, note: 'Separate from status; not a status value']
+  created_by ulid [not null]
+  updated_by ulid [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null]
+
+  indexes {
+    domain [name: 'domains_domain_unique']
+    company_id [name: 'domains_company_id_index']
+    status [name: 'domains_status_index']
+  }
+
+  Note: 'Application-owned hostname → Company map (Phase 1D). NOT Stancl stock domains table. Soft deletes; FK deletes: NO ACTION. Resolution reads this on the platform connection before tenancy init.'
+}
+
 Ref: platform_users.created_by > platform_users.id [delete: no action]
 Ref: platform_users.updated_by > platform_users.id [delete: no action]
 Ref: platform_user_roles.user_id > platform_users.id [delete: no action]
@@ -129,3 +152,6 @@ Ref: platform_role_permissions.role_id > platform_roles.id [delete: no action]
 Ref: platform_role_permissions.permission_id > platform_permissions.id [delete: no action]
 Ref: companies.created_by > platform_users.id [delete: no action]
 Ref: companies.updated_by > platform_users.id [delete: no action]
+Ref: domains.company_id > companies.id [delete: no action]
+Ref: domains.created_by > platform_users.id [delete: no action]
+Ref: domains.updated_by > platform_users.id [delete: no action]

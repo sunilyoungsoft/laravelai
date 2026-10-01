@@ -80,10 +80,16 @@ tests/Feature, tests/Unit    PHPUnit tests
   + pivots, models, `platform` auth guard, Admin role seeder, `php artisan platform:create-admin`.
 - **Phase 1C — Companies:** done. `companies` table on `platform`, `Company` model +
   `CompanyStatus` enum, `CompanyService`, app-generated `database_name` (`workspace_{ulid}`).
+- **Phase 1D — Workspace Provisioning + Domains:** done. `WorkspaceDatabaseService` +
+  `ProvisionWorkspaceAction` (create/migrate/verify/activate, delete+recreate on retry,
+  guarded drop), `workspace:provision` command + `ProvisionWorkspaceJob`, platform `domains`
+  table + `Domain` model/enums + Domain Actions, hostname resolver + `tenant.resolve`
+  middleware, `tests/Security/` suite. Full suite 136 passed; Pint clean. See
+  `.kiro/specs/phase-1d-workspace-provisioning-domains/`.
 
 ### Not built yet
-Domains, workspace DB provisioning, workspace users/RBAC, subscriptions, module
-system runtime, login UI, 2FA, password reset. No business modules exist yet.
+Workspace users/RBAC, subscriptions, module system runtime, login UI, 2FA, password reset,
+custom-domain verification (DNS/SSL). No business modules exist yet.
 
 ## Key invariants (do not violate)
 
