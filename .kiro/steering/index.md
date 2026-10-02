@@ -27,7 +27,7 @@ workspace database, and business features are shipped as installable modules.
 | Cache/Queue| Redis (predis), Laravel Queue + Scheduler             |
 | Frontend   | Inertia.js + React 19 + TypeScript + Tailwind CSS 4   |
 | Testing    | PHPUnit 12                                             |
-| Tooling    | Vite 7, Laravel Pint, Pail                            |
+| Tooling    | Vite 7, Laravel Pint, Pail, ESLint + Prettier, shadcn/ui |
 
 ## Steering rules (auto-loaded context)
 
@@ -86,10 +86,23 @@ tests/Feature, tests/Unit    PHPUnit tests
   table + `Domain` model/enums + Domain Actions, hostname resolver + `tenant.resolve`
   middleware, `tests/Security/` suite. Full suite 136 passed; Pint clean. See
   `.kiro/specs/phase-1d-workspace-provisioning-domains/`.
+- **Phase 1E — Platform Admin UI:** done. Platform login (`Auth::guard('platform')`,
+  `routes/platform.php`, no registration/reset/2FA), `PlatformUser::isPlatformAdmin()` +
+  `CompanyPolicy` (viewAny/view/create/provision/manageDomains), thin controllers
+  (Dashboard, Company index/create/show, Workspace provision, Company domain) all authorized
+  via policy. Admin-UI provisioning is **synchronous in-request** (1E-E); the UI manages a
+  **single effective (primary) domain** per company (1E-C). Frontend tooling added (ESLint +
+  Prettier, lint/format/type-check scripts; **TypeScript pinned to `^6.x`, not 7.x** — 1E-D),
+  shadcn/ui initialized for Tailwind v4 (ui primitives + reusable Platform components), 5
+  Inertia pages. `tests/Feature/Platform` + `tests/Security` access-control matrix. Full
+  suite 200 passed; Pint clean; lint/type-check/build clean. See
+  `.kiro/specs/phase-1e-platform-admin-ui/`.
 
 ### Not built yet
-Workspace users/RBAC, subscriptions, module system runtime, login UI, 2FA, password reset,
-custom-domain verification (DNS/SSL). No business modules exist yet.
+Workspace users/RBAC, subscriptions, module system runtime, 2FA, password reset,
+custom-domain verification (DNS/SSL), queued-provisioning robustness (still unproven — admin UI
+provisions synchronously). No business modules exist yet. (Platform admin login UI now exists —
+Phase 1E.)
 
 ## Key invariants (do not violate)
 

@@ -4,24 +4,63 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write \"resources/**/*.{ts,tsx,css}\"",
+        "type-check": "tsc --noEmit"
     },
     "devDependencies": {
+        "@eslint/js": "^9.37.0",
         "@tailwindcss/vite": "^4.0.0",
         "@types/node": "^26.6.1",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
+        "eslint": "^9.37.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^5.2.0",
+        "globals": "^16.4.0",
         "laravel-vite-plugin": "^2.0.0",
+        "prettier": "^3.6.2",
         "tailwindcss": "^4.0.0",
+        "typescript-eslint": "^8.46.0",
         "vite": "^7.0.7"
     },
     "dependencies": {
         "@inertiajs/react": "^3.7.1",
+        "@radix-ui/react-dialog": "^1.1.23",
+        "@radix-ui/react-label": "^2.1.15",
+        "@radix-ui/react-slot": "^1.3.3",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "@vitejs/plugin-react": "^5.2.0",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "lucide-react": "^1.49.0",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
-        "typescript": "^7.0.2"
+        "tailwind-merge": "^3.7.0",
+        "typescript": "^6.0.0"
+    },
+    "overrides": {
+        "typescript-eslint": {
+            "typescript": "$typescript"
+        },
+        "@typescript-eslint/typescript-estree": {
+            "typescript": "$typescript"
+        },
+        "@typescript-eslint/parser": {
+            "typescript": "$typescript"
+        },
+        "@typescript-eslint/eslint-plugin": {
+            "typescript": "$typescript"
+        },
+        "@typescript-eslint/type-utils": {
+            "typescript": "$typescript"
+        },
+        "@typescript-eslint/utils": {
+            "typescript": "$typescript"
+        }
     }
 }

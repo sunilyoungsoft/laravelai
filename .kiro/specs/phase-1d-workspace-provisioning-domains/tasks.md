@@ -206,7 +206,7 @@
   steering says to keep current, e.g. `docs/database/platform.dbml` already done in 6.5; note
   provisioning + Domains status). Record confirmed OD answers and any deferred middleware work.
   _Requirements: process rules._
-- [~] 11.3 (OPTIONAL — NOT DONE) Non-breaking cleanup: neutralize `config('tenancy.domain_model')`
+- [ ] 11.3 (OPTIONAL — NOT DONE) Non-breaking cleanup: neutralize `config('tenancy.domain_model')`
   reliance confusion (documented, since app Domain is independent of Stancl's stock domain
   model). Deferred: harmless as-is (the app never reads `tenancy.domain_model`); leave until a
   reason to touch tenancy config arises. _Requirements: B1.2._

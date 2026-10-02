@@ -7,10 +7,22 @@ fileMatchPattern: ['**/*.tsx', '**/*.ts', '**/Resources/js/**']
 
 Use:
 
-React
+React 19
 TypeScript
 Inertia.js
-Tailwind CSS
+Tailwind CSS v4 (CSS-first via `@tailwindcss/vite`; no `tailwind.config.js`)
+shadcn/ui for UI primitives
+
+## Imports & tooling
+
+- Import app code via the `@/*` alias (`@/* → resources/js/*`), already set in `tsconfig.json`
+  and `vite.config.js`. Do not use long relative `../../` paths.
+- shadcn/ui primitives live under `resources/js/components/ui/`; shared app components under
+  `resources/js/components/`. Prefer composing shadcn primitives over hand-rolling base UI.
+- Lint, format, and type-check must pass before a frontend change is considered done
+  (`npm run lint`, `npm run type-check`, `npm run build`). Do not introduce `any`.
+- Do not casually upgrade React, Vite, Tailwind, Inertia, or TypeScript versions; add
+  dependencies deliberately.
 
 ## Inertia
 

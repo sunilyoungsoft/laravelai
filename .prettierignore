@@ -1,0 +1,6 @@
+public/build
+node_modules
+vendor
+bootstrap/ssr
+storage
+*.min.js

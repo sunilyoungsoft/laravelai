@@ -69,6 +69,18 @@ class PlatformUser extends Authenticatable
         )->withTimestamps();
     }
 
+    /**
+     * True only when the user holds the active Admin system role
+     * (slug=admin, is_system=true, status active). Server-authoritative
+     * check for Platform admin authorization.
+     */
+    public function isPlatformAdmin(): bool
+    {
+        return $this->roles->contains(
+            fn (PlatformRole $role): bool => $role->isAdminSystemRole() && $role->status === 1
+        );
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(self::class, 'created_by');
