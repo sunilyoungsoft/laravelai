@@ -45,3 +45,75 @@ Table workspace_meta {
   created_at timestamp
   updated_at timestamp
 }
+
+// =====================================================================
+// Workspace RBAC (1G). Per-tenant authorization — completely separate
+// from Platform RBAC (which lives in the Platform DB). Roles/permissions
+// and their grants are isolated to each Company's workspace database.
+//
+// Authorization is checked server-side via Laravel Gates: the `workspace-admin`
+// system role short-circuits via Gate::before; normal roles carry EXPLICIT
+// permissions (no wildcard records). Permission slugs follow `{module}.{action}`.
+// =====================================================================
+
+// Per-company roles. `is_system` marks protected roles (the seeded
+// `workspace-admin`). `slug` is unique within this tenant DB and reserved
+// across soft-deletes (restore, don't duplicate).
+Table workspace_roles {
+  id ulid [pk]
+  name varchar
+  slug varchar [unique, note: 'Unique within this tenant DB; reserved across soft-delete']
+  description text [null]
+  is_system boolean [default: false, note: 'true = protected system role (workspace-admin)']
+  status tinyint [default: 1, note: '1 = active']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null, note: 'Soft deletes']
+
+  Indexes {
+    status
+  }
+}
+
+// Per-company permissions. Slug convention `{module}.{action}` (e.g.
+// workspace.access). Phase 1G seeds only proof permissions
+// (workspace.access, workspace.manage); module permissions arrive with
+// each module later.
+Table workspace_permissions {
+  id ulid [pk]
+  name varchar
+  slug varchar [unique, note: '{module}.{action}; unique within this tenant DB']
+  description text [null]
+  status tinyint [default: 1, note: '1 = active']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null, note: 'Soft deletes']
+
+  Indexes {
+    status
+  }
+}
+
+// workspace user <-> role (NO ACTION FKs, composite unique).
+Table workspace_user_roles {
+  user_id ulid [ref: > workspace_users.id, note: 'NO ACTION on delete']
+  role_id ulid [ref: > workspace_roles.id, note: 'NO ACTION on delete']
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (user_id, role_id) [unique]
+  }
+}
+
+// workspace role <-> permission (NO ACTION FKs, composite unique).
+Table workspace_role_permissions {
+  role_id ulid [ref: > workspace_roles.id, note: 'NO ACTION on delete']
+  permission_id ulid [ref: > workspace_permissions.id, note: 'NO ACTION on delete']
+  created_at timestamp
+  updated_at timestamp
+
+  Indexes {
+    (role_id, permission_id) [unique]
+  }
+}

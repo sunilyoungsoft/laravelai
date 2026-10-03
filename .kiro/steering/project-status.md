@@ -5,7 +5,7 @@ inclusion: always
 # Project Status
 
 Living status tracker. Update it when a phase completes or the architecture changes.
-Verified against the repository on 2026-09-30 (Kiro takeover).
+Verified against the repository on 2026-10-03 (Phase 1G complete).
 
 ## Identity
 
@@ -137,34 +137,91 @@ Verified against the repository on 2026-09-30 (Kiro takeover).
     `tests/Security/WorkspaceAuthIsolationTest` (cross-tenant resolution isolation, host-only
     selection, central-host/unknown-host fail-safe, forced-change not bypassable, temp pw never
     logged). Workspace RBAC (roles/permissions) is explicitly a follow-up phase.
+- **Phase 1G — Workspace Authorization / RBAC — COMPLETE.** Tenant-resident workspace RBAC and
+  Gate-based authorization (decisions 1G: Laravel Gates + `Gate::before` short-circuit; proof
+  permissions only; dedicated idempotent command; dedicated service provider; system-role
+  short-circuit scoped strictly to the workspace-admin role). No Policies, no new package, no
+  business modules. See `docs/architecture/workspace-rbac.md`.
+  - **Identity architecture decision (documented in `docs/architecture/workspace-rbac.md`):**
+    **Platform Admin** (Platform DB, `platform` guard — SaaS platform + Company lifecycle) and
+    **Workspace Super Admin** (workspace DB, `workspace` guard — root, highest-privileged user
+    inside one Workspace, created at provisioning) are separate identities in separate auth
+    realms. A Platform Admin is never implicitly a Workspace user and gets no automatic access to
+    Workspace business data; any future Platform→Workspace support access is a separate,
+    explicitly authorized + audited feature (not built). The current `workspace-admin` role IS the
+    Workspace Super Admin mechanism — the product-name-vs-slug naming decision is deliberately
+    deferred (do not rename yet). This is a documentation clarification; the 1G implementation is
+    unchanged.
+  - **Tenant RBAC schema (tenant migrations `2026_03_21_000001..000004`):** `workspace_roles`
+    (ULID, name, slug unique, description, `is_system`, `status`, soft deletes, status index),
+    `workspace_permissions` (same minus `is_system`), and the pivots `workspace_user_roles` /
+    `workspace_role_permissions` (composite-unique, `noActionOnDelete` FKs). All live only in
+    each Company's workspace DB — never the Platform DB. Documented in `docs/database/workspace.dbml`.
+  - **Models:** `WorkspaceRole` + `WorkspacePermission` (NO explicit connection — resolve on the
+    dynamic `tenant` connection; `HasUlids` + `SoftDeletes` + `belongsToMany` pivots;
+    `WorkspaceRole::isAdminSystemRole()` = `is_system===true && slug==='workspace-admin'`).
+    `WorkspaceUser` extended with `roles()`, `isWorkspaceAdmin()` (active workspace-admin system
+    role — the Workspace analogue of `PlatformUser::isPlatformAdmin()`), `hasRole(slug)`, and
+    `hasPermission(slug)` (resolved entirely within the tenant DB).
+  - **Seeding (`SeedWorkspaceRbacAction`):** idempotent + soft-delete-safe (match by slug
+    `withTrashed`, restore, re-enforce invariants — mirrors `PlatformRoleSeeder`). Seeds the
+    protected `workspace-admin` system role + the two **proof** permissions `workspace.access`
+    and `workspace.manage`, and assigns both to the admin role **explicitly** (no wildcards).
+    Must run inside tenant context. Wired into `CreateInitialWorkspaceAdminAction` (seeds, then
+    attaches `workspace-admin` to the initial admin), so a freshly provisioned workspace admin
+    already carries `workspace.access`.
+  - **`workspace:seed-rbac {company?} {--all}`** command — idempotent re-seed for existing
+    workspaces (skips companies with no workspace DB). `workspace:migrate` stays **structural
+    only**; `workspace:seed-rbac` is the data path for RBAC.
+  - **Authorization wiring (`WorkspaceAuthServiceProvider`, registered in `bootstrap/providers.php`):**
+    a `Gate::before` short-circuit grants every **workspace** ability to an active
+    workspace-admin — scoped strictly in two ways: it only acts on a `WorkspaceUser`, and it
+    only fires for model-less abilities (`$arguments === []`). Platform `CompanyPolicy` abilities
+    always target a Platform model, so the short-circuit never fires for them and never leaks
+    into Platform authorization; it returns `null` (not `false`) for everything else. Explicit
+    permission-slug gates (`workspace.access`, `workspace.manage`) resolve through
+    `WorkspaceUser::hasPermission`. The workspace home route carries `can:workspace.access` as
+    proof-of-integration.
+  - **Tests:** `tests/Feature/Workspace/{WorkspaceRbacMigrationTest,WorkspaceRbacModelTest,SeedWorkspaceRbacTest,WorkspaceAuthorizationTest}`
+    and `tests/Security/WorkspacePlatformAuthorizationSeparationTest` (a PlatformUser can never
+    satisfy a workspace gate; a workspace-admin can never satisfy a Platform ability; Platform
+    admin authorization is unaffected by the workspace `Gate::before`; a missing tenant context
+    cannot resolve a workspace permission — proving no cross-DB fallback). The pre-existing
+    `WorkspaceAuthTest` was updated **intentionally** (expected behavior changed): its onboarded
+    user now holds `workspace-admin`, so the home route's new `can:workspace.access` requirement
+    is satisfied.
 
-## Verification run (Phase 1F)
+## Verification run (Phase 1G)
 
-- `php artisan test` → **245 passed, 737 assertions** (PHP 8.4.25) — up from the 206 at the start
-  of Phase 1F (which was itself up from 200 at Phase 1E, +6 hashing tests).
-- `vendor/bin/pint --test` → **passed** (141 files).
-- `npm run lint` / `npm run type-check` / `npm run build` → all **clean**.
+- `php artisan test` → **270 passed, 828 assertions** (PHP 8.4.25) — up from 245 at the end of
+  Phase 1F (+25 RBAC/authorization tests).
+- `vendor/bin/pint --test` → **passed** (158 files).
+- `npm run lint` / `npm run type-check` / `npm run build` → all **clean** (no TS/JS changed this
+  phase; gates run for regression safety).
 
 ## Not built yet
 
-Workspace **RBAC** (roles/permissions per tenant — Phase 1F deliberately shipped auth only),
-Workspace user management UI beyond the initial admin, subscriptions, module-system runtime
-(install/enable/disable/update/uninstall), 2FA flows, password reset / email flows. No
-business/ERP modules exist. AI/MCP not started. Custom-domain verification (DNS/SSL) is
-intentionally out of scope so far (future work). Both the platform admin **login UI** (Phase 1E)
-and the workspace **login UI** (Phase 1F) now exist; registration / password-reset / 2FA surfaces
-are deliberately absent.
+Workspace RBAC **management UI** (roles/permissions are seeded + enforced, but there is no admin
+screen to create roles or assign permissions yet), workspace user management UI beyond the
+initial admin, subscriptions, module-system runtime (install/enable/disable/update/uninstall),
+2FA flows, password reset / email flows. No business/ERP modules exist. AI/MCP not started.
+Custom-domain verification (DNS/SSL) is intentionally out of scope so far (future work). Both the
+platform admin **login UI** (Phase 1E) and the workspace **login UI** (Phase 1F) now exist;
+registration / password-reset / 2FA surfaces are deliberately absent.
 
 ## Actual next step
 
-Phase 1F (Workspace Users + Workspace Login) is done — workspace users can sign in on their
-Company host, are forced to change the initial temporary password, and tenant isolation of
-workspace auth is tested. Candidate next work: **Workspace RBAC** (roles/permissions per tenant),
-workspace user management beyond the first admin, and/or custom-domain verification transport
-(DNS/SSL). Notes carried forward: admin-UI provisioning is **synchronous in-request** (decision
-1E-E) and queued-provisioning robustness remains **unproven**; `workspace:migrate` is the
-supported path to apply new tenant migrations to existing active workspaces. Start any
-significant next feature with a Kiro Spec.
+Phase 1G (Workspace Authorization / RBAC) is done — each workspace has its own tenant-resident
+roles/permissions, the workspace-admin system role grants workspace abilities via a strictly
+scoped `Gate::before`, permission-slug gates + `can:` middleware enforce access, and
+Platform/Workspace authorization are proven to be completely separate. Candidate next work:
+**Workspace RBAC management UI** (create roles, assign permissions, manage workspace users beyond
+the first admin), the first **business module** (which would register its own `{module}.{action}`
+workspace permissions following `docs/architecture/workspace-rbac.md`), and/or custom-domain
+verification transport (DNS/SSL). Notes carried forward: admin-UI provisioning is **synchronous
+in-request** (decision 1E-E) and queued-provisioning robustness remains **unproven**;
+`workspace:migrate` applies new tenant migrations to existing active workspaces, and
+`workspace:seed-rbac` (re)seeds their RBAC. Start any significant next feature with a Kiro Spec.
 
 ## Environment notes
 
@@ -180,6 +237,9 @@ significant next feature with a Kiro Spec.
   rehash to Argon2id on next login — do not flip it to `true` while any bcrypt hash may remain.
 - `workspace:migrate {company|--all}` runs pending tenant migrations against existing active
   workspaces without drop/recreate; use it (not re-provisioning) to roll out new tenant migrations.
+- `workspace:seed-rbac {company|--all}` (re)seeds the workspace-admin system role + proof
+  permissions into existing workspaces (idempotent, soft-delete-safe); `workspace:migrate` is
+  structural only, so this is the RBAC data path for already-active workspaces.
 
 ## Known stale / conflicting docs to reconcile (do not silently "fix")
 

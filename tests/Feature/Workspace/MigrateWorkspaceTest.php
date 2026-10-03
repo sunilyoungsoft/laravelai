@@ -34,11 +34,25 @@ class MigrateWorkspaceTest extends TestCase
     private function regressWorkspace(Company $company): void
     {
         $company->run(function () {
+            // Fabricate a "pre-workspace_users" tenant schema. workspace_users is now the
+            // target of RBAC pivot FKs (workspace_user_roles), so drop the dependents first
+            // with FK checks disabled — this is a test-only simulation of an older schema
+            // state, not production behavior.
+            Schema::connection('tenant')->disableForeignKeyConstraints();
+            Schema::connection('tenant')->dropIfExists('workspace_role_permissions');
+            Schema::connection('tenant')->dropIfExists('workspace_user_roles');
+            Schema::connection('tenant')->dropIfExists('workspace_permissions');
+            Schema::connection('tenant')->dropIfExists('workspace_roles');
             Schema::connection('tenant')->dropIfExists('workspace_users');
+            Schema::connection('tenant')->enableForeignKeyConstraints();
 
-            // Remove workspace_users from the tenant migration ledger so it is pending again.
+            // Remove the corresponding migration ledger rows so they are pending again.
             DB::connection('tenant')->table('migrations')
                 ->where('migration', 'like', '%create_workspace_users_table')
+                ->orWhere('migration', 'like', '%create_workspace_roles_table')
+                ->orWhere('migration', 'like', '%create_workspace_permissions_table')
+                ->orWhere('migration', 'like', '%create_workspace_user_roles_table')
+                ->orWhere('migration', 'like', '%create_workspace_role_permissions_table')
                 ->delete();
 
             // Existing business data that must survive the in-place migrate.

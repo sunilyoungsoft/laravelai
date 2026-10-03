@@ -34,8 +34,12 @@ Route::middleware(InitializeTenancyByResolvedDomain::class)->group(function () {
         Route::post('/password/change', [WorkspacePasswordChangeController::class, 'update'])
             ->name('workspace.password.update');
 
-        // Workspace landing. The real Inertia page is built in the next task; the route
-        // name must resolve now because login + password change redirect to it.
-        Route::get('/', fn () => Inertia::render('Workspace/Home'))->name('workspace.home');
+        // Workspace landing. Gated by the `workspace.access` permission as the Phase 1G
+        // proof-of-integration: the workspace-admin system role passes via the Gate::before
+        // short-circuit; any other user needs the permission through an active role. Server
+        // authorization is authoritative (not just the forced-password-change middleware).
+        Route::get('/', fn () => Inertia::render('Workspace/Home'))
+            ->middleware('can:workspace.access')
+            ->name('workspace.home');
     });
 });

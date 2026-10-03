@@ -111,13 +111,28 @@ tests/Feature, tests/Unit    PHPUnit tests
   `tests/Security/WorkspaceAuthIsolationTest` tenant-isolation matrix. Full suite 245 passed; Pint
   clean; lint/type-check/build clean. Workspace **RBAC** is a follow-up. See
   `.kiro/specs/phase-1f-workspace-auth/` (plan tracked in session).
+- **Phase 1G — Workspace Authorization / RBAC:** done. Tenant-resident `workspace_roles` /
+  `workspace_permissions` + pivots (tenant migrations `2026_03_21_000001..000004`, never in the
+  Platform DB), `WorkspaceRole` / `WorkspacePermission` models (no explicit connection) +
+  `WorkspaceUser` `roles()`/`isWorkspaceAdmin()`/`hasRole()`/`hasPermission()`. Idempotent,
+  soft-delete-safe `SeedWorkspaceRbacAction` seeds the `workspace-admin` system role + proof
+  permissions `workspace.access` & `workspace.manage` (assigned explicitly, no wildcards), wired
+  into `CreateInitialWorkspaceAdminAction`; `workspace:seed-rbac {company|--all}` re-seeds
+  existing workspaces (`workspace:migrate` stays structural only). `WorkspaceAuthServiceProvider`
+  (registered in `bootstrap/providers.php`) adds a strictly scoped `Gate::before` workspace-admin
+  short-circuit (only a `WorkspaceUser`, only model-less abilities → never leaks into Platform
+  `CompanyPolicy`) + permission-slug gates via `hasPermission`; workspace home carries
+  `can:workspace.access`. `tests/Feature/Workspace/*` + `tests/Security/WorkspacePlatformAuthorizationSeparationTest`
+  prove Platform/Workspace authorization are fully separate and that missing tenant context has no
+  cross-DB fallback. Full suite 270 passed; Pint clean (158 files); lint/type-check/build clean.
+  See `docs/architecture/workspace-rbac.md`. Workspace RBAC **management UI** is a follow-up.
 
 ### Not built yet
-Workspace **RBAC** (roles/permissions per tenant), workspace user management beyond the initial
-admin, subscriptions, module system runtime, 2FA, password reset, custom-domain verification
-(DNS/SSL), queued-provisioning robustness (still unproven — admin UI provisions synchronously).
-No business modules exist yet. (Both platform admin login (Phase 1E) and workspace login (Phase
-1F) now exist.)
+Workspace RBAC **management UI** (roles are seeded + enforced, no screen to author them yet),
+workspace user management beyond the initial admin, subscriptions, module system runtime, 2FA,
+password reset, custom-domain verification (DNS/SSL), queued-provisioning robustness (still
+unproven — admin UI provisions synchronously). No business modules exist yet. (Platform admin
+login (1E), workspace login (1F), and workspace authorization/RBAC (1G) now exist.)
 
 ## Key invariants (do not violate)
 
@@ -127,6 +142,20 @@ No business modules exist yet. (Both platform admin login (Phase 1E) and workspa
   modules, domains) stays in the Platform DB; business data lives in tenant DBs.
 - **Admin role:** the Admin system role uses explicit permissions, never wildcards. New
   platform permissions must be assigned to Admin.
+- **Workspace RBAC:** workspace roles/permissions are **tenant-resident** (per workspace DB) and
+  completely separate from Platform RBAC — neither can grant the other. The `workspace-admin`
+  system role is granted via a `Gate::before` short-circuit scoped strictly to a `WorkspaceUser`
+  and to model-less workspace abilities only; it must never fire for a Platform policy ability.
+  Workspace permissions follow `{module}.{action}` and are assigned to the admin role explicitly
+  (no wildcards). See `docs/architecture/workspace-rbac.md`.
+- **Separate admin identities:** **Platform Admin** (Platform DB, `platform` guard) manages the
+  SaaS platform + Company lifecycle. **Workspace Super Admin** (workspace DB, `workspace` guard —
+  today the `workspace-admin` system role) is the root, highest-privileged user *inside one
+  Workspace*, created at provisioning. A Platform Admin is **never** implicitly a Workspace user
+  and gets **no** automatic access to Workspace business data; any future Platform→Workspace
+  support access must be a separate, explicitly authorized + audited feature (not built, not a
+  backdoor). The "Workspace Super Admin" product name vs the `workspace-admin` code slug is a
+  deliberately deferred naming decision — do not rename yet. See `docs/architecture/workspace-rbac.md`.
 - **Soft-delete identity:** `email`, `phone`, role/permission `slug`, company `slug` and
   `database_name` stay reserved after soft delete — restore, don't duplicate.
 - **Schema conventions:** ULID primary keys, snake_case plural tables, FKs use `NO ACTION`
@@ -146,4 +175,6 @@ composer run dev        # server + queue + logs + vite together
 php artisan test        # run tests
 npm run build           # build frontend
 php artisan platform:create-admin   # bootstrap first Platform Admin
+php artisan workspace:migrate --all   # apply pending tenant migrations (structural)
+php artisan workspace:seed-rbac --all # (re)seed workspace RBAC into existing workspaces
 ```

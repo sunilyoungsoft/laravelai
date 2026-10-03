@@ -2,6 +2,7 @@
 
 namespace App\Actions\Workspace;
 
+use App\Models\WorkspaceRole;
 use App\Models\WorkspaceUser;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -27,11 +28,19 @@ class CreateInitialWorkspaceAdminAction
 {
     private const TEMPORARY_PASSWORD_LENGTH = 20;
 
+    public function __construct(
+        private readonly SeedWorkspaceRbacAction $seedWorkspaceRbac,
+    ) {}
+
     public function execute(CreateInitialWorkspaceAdminData $data): InitialWorkspaceAdminResult
     {
         $this->ensureNoExistingWorkspaceUser();
 
         $validated = $this->validate($data);
+
+        // Ensure the baseline RBAC (workspace-admin role + proof permissions) exists before
+        // attaching the role. Idempotent, so a workspace already seeded is unaffected (1G).
+        $this->seedWorkspaceRbac->execute();
 
         $temporaryPassword = Str::password(self::TEMPORARY_PASSWORD_LENGTH);
 
@@ -45,6 +54,10 @@ class CreateInitialWorkspaceAdminAction
         $user->must_change_password = true;
         $user->status = 1;
         $user->save();
+
+        // Grant the initial admin the protected Workspace Admin system role (1F-E + 1G).
+        $adminRole = WorkspaceRole::where('slug', 'workspace-admin')->firstOrFail();
+        $user->roles()->syncWithoutDetaching([$adminRole->id]);
 
         return new InitialWorkspaceAdminResult(
             user: $user->refresh(),

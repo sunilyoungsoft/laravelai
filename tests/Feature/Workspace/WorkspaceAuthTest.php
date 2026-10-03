@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Workspace;
 
+use App\Actions\Workspace\SeedWorkspaceRbacAction;
 use App\Enums\DomainStatus;
 use App\Models\Company;
 use App\Models\Domain;
 use App\Models\PlatformUser;
+use App\Models\WorkspaceRole;
 use App\Models\WorkspaceUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -41,16 +43,28 @@ class WorkspaceAuthTest extends TestCase
     }
 
     /**
-     * Create a workspace user inside the Company's tenant database.
+     * Create an onboarded workspace user inside the Company's tenant database.
+     *
+     * Mirrors the real provisioning outcome: baseline RBAC is seeded and the user holds the
+     * workspace-admin system role, so they carry workspace.access (now required to reach the
+     * workspace home). These tests exercise the auth flow — login, logout, forced change — on
+     * a properly authorized user, not the authorization matrix itself (that lives in
+     * WorkspaceAuthorizationTest).
      */
     private function createWorkspaceUser(Company $company, array $attributes = []): void
     {
         $company->run(function () use ($attributes) {
+            app(SeedWorkspaceRbacAction::class)->execute();
+
             $user = WorkspaceUser::create(array_merge([
                 'name' => 'Workspace User',
                 'email' => 'user@acme.test',
                 'password' => 'secret-password',
             ], $attributes));
+
+            $user->roles()->syncWithoutDetaching([
+                WorkspaceRole::query()->where('slug', 'workspace-admin')->firstOrFail()->id,
+            ]);
 
             // must_change_password is not fillable; it defaults to true in the DB. Unless a
             // test explicitly wants the forced-change state, treat the user as onboarded.
