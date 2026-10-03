@@ -36,12 +36,14 @@ class PlatformAuthTest extends TestCase
 
     public function test_legacy_bcrypt_user_can_log_in_and_password_is_rehashed_to_argon2id(): void
     {
-        // Simulate an account created before Argon2id was configured: store a
-        // raw bcrypt hash directly so the model's `hashed` cast does not re-hash it.
+        // Simulate an account created before Argon2id was configured. The `hashed`
+        // cast guards writes against the configured algorithm, so seed the legacy
+        // bcrypt hash straight into the row via the query builder to represent a
+        // pre-existing record.
         $user = PlatformUser::factory()->create(['email' => 'legacy@example.com']);
-        $user->forceFill([
+        PlatformUser::on('platform')->whereKey($user->id)->update([
             'password' => password_hash('legacy-password', PASSWORD_BCRYPT),
-        ])->save();
+        ]);
 
         $this->assertSame('bcrypt', password_get_info($user->fresh()->password)['algoName']);
 

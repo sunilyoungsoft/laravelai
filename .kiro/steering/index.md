@@ -23,9 +23,10 @@ workspace database, and business features are shipped as installable modules.
 | Layer      | Choice                                                |
 | ---------- | ----------------------------------------------------- |
 | Backend    | Laravel 13, PHP 8.4                                    |
-| Database   | MySQL 8.x — `platform` connection + `workspace` (stub) |
+| Database   | MySQL 8.x — `platform` connection + per-company `workspace` DBs |
 | Cache/Queue| Redis (predis), Laravel Queue + Scheduler             |
 | Frontend   | Inertia.js + React 19 + TypeScript + Tailwind CSS 4   |
+| Auth/Hash  | `platform` + `workspace` session guards; Argon2id (Hash abstraction) |
 | Testing    | PHPUnit 12                                             |
 | Tooling    | Vite 7, Laravel Pint, Pail, ESLint + Prettier, shadcn/ui |
 
@@ -97,12 +98,26 @@ tests/Feature, tests/Unit    PHPUnit tests
   Inertia pages. `tests/Feature/Platform` + `tests/Security` access-control matrix. Full
   suite 200 passed; Pint clean; lint/type-check/build clean. See
   `.kiro/specs/phase-1e-platform-admin-ui/`.
+- **Phase 1F — Workspace Users + Workspace Login:** done. App-wide **Argon2id** hashing
+  (`config/hashing.php`, 1F-A; legacy bcrypt still verifies + rehashes on login). Tenant-resident
+  `workspace_users` migration + `WorkspaceUser` model (1F-B, never in the Platform DB). A
+  `workspace` auth guard (1F-C; `defaults.guard` stays `platform`). Platform routes host-scoped to
+  central domains; workspace login/logout + forced-password-change served on resolved Company hosts
+  behind `tenant.resolve` (1F-D), with host-aware guest/user redirects. Initial Workspace Admin
+  created at provisioning with a one-time temporary password shown once (1F-E), forced change on
+  first login via `EnsureWorkspacePasswordChanged` (1F-F). `workspace:migrate {company|--all}`
+  applies pending tenant migrations to existing active workspaces without drop/recreate (1F-G).
+  Standalone workspace Inertia pages + layout. `tests/Feature/Workspace` + a
+  `tests/Security/WorkspaceAuthIsolationTest` tenant-isolation matrix. Full suite 245 passed; Pint
+  clean; lint/type-check/build clean. Workspace **RBAC** is a follow-up. See
+  `.kiro/specs/phase-1f-workspace-auth/` (plan tracked in session).
 
 ### Not built yet
-Workspace users/RBAC, subscriptions, module system runtime, 2FA, password reset,
-custom-domain verification (DNS/SSL), queued-provisioning robustness (still unproven — admin UI
-provisions synchronously). No business modules exist yet. (Platform admin login UI now exists —
-Phase 1E.)
+Workspace **RBAC** (roles/permissions per tenant), workspace user management beyond the initial
+admin, subscriptions, module system runtime, 2FA, password reset, custom-domain verification
+(DNS/SSL), queued-provisioning robustness (still unproven — admin UI provisions synchronously).
+No business modules exist yet. (Both platform admin login (Phase 1E) and workspace login (Phase
+1F) now exist.)
 
 ## Key invariants (do not violate)
 
@@ -117,8 +132,12 @@ Phase 1E.)
 - **Schema conventions:** ULID primary keys, snake_case plural tables, FKs use `NO ACTION`
   (`noActionOnDelete()`), timestamps in UTC (no MySQL `NOW()`/`CURRENT_TIMESTAMP`).
 - **Modules explicit connection:** platform models/migrations/seeders/services set the
-  `platform` connection explicitly; future platform auth uses `Auth::guard('platform')`.
-- **Keep `docs/database/platform.dbml` updated** whenever platform schema changes.
+  `platform` connection explicitly; platform auth uses `Auth::guard('platform')`. Workspace
+  models (e.g. `WorkspaceUser`) set NO connection — they resolve on the dynamic `tenant`
+  connection and are only usable inside tenant context; workspace auth uses
+  `Auth::guard('workspace')`.
+- **Keep `docs/database/platform.dbml` and `docs/database/workspace.dbml` updated** whenever the
+  platform or workspace (tenant) schema changes.
 
 ## Common commands
 

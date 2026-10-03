@@ -333,7 +333,10 @@ class PlatformAdminControllersTest extends TestCase
         $this->workspaceDatabases->trackExisting($company->database_name);
 
         $response = $this->actingAs($admin, 'platform')
-            ->post(route('platform.companies.provision', $company));
+            ->post(route('platform.companies.provision', $company), [
+                'workspace_admin_name' => 'Acme Admin',
+                'workspace_admin_email' => 'admin@acme.test',
+            ]);
 
         $response->assertRedirect(route('platform.companies.show', $company));
         $response->assertSessionHas('success');
@@ -349,7 +352,10 @@ class PlatformAdminControllersTest extends TestCase
         $company = Company::factory()->create(['status' => CompanyStatus::Active]);
 
         $response = $this->actingAs($admin, 'platform')
-            ->post(route('platform.companies.provision', $company));
+            ->post(route('platform.companies.provision', $company), [
+                'workspace_admin_name' => 'Acme Admin',
+                'workspace_admin_email' => 'admin@acme.test',
+            ]);
 
         $response->assertRedirect(route('platform.companies.show', $company));
         $response->assertSessionHas('error');

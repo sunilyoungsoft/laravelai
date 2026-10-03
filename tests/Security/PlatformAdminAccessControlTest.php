@@ -54,7 +54,7 @@ class PlatformAdminAccessControlTest extends TestCase
             'companies.create' => ['get', 'platform.companies.create', false, []],
             'companies.store' => ['post', 'platform.companies.store', false, ['name' => 'X', 'slug' => 'x-co']],
             'companies.show' => ['get', 'platform.companies.show', true, []],
-            'companies.provision' => ['post', 'platform.companies.provision', true, []],
+            'companies.provision' => ['post', 'platform.companies.provision', true, ['workspace_admin_name' => 'A', 'workspace_admin_email' => 'a@example.test']],
             'companies.domain.store' => ['post', 'platform.companies.domain.store', true, ['domain' => 'a.example.test', 'type' => DomainType::Custom->value]],
             'companies.domain.update' => ['put', 'platform.companies.domain.update', true, ['domain' => 'b.example.test', 'type' => DomainType::Custom->value]],
         ];

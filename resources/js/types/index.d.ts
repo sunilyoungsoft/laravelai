@@ -132,11 +132,34 @@ export type Auth = {
     can: AuthAbilities;
 };
 
+/**
+ * One-time initial Workspace Admin credential, flashed once on the Company Show
+ * page immediately after provisioning (1F-E). Absent on any later view.
+ */
+export type WorkspaceAdminFlash = {
+    email: string;
+    temporary_password: string;
+};
+
 /** Shared `flash` prop from HandleInertiaRequests::share. */
 export type FlashProps = {
     success: string | null;
     error: string | null;
     demo_note_id?: string | null;
+    workspace_admin?: WorkspaceAdminFlash | null;
+};
+
+/** The authenticated Workspace User identity shared via Inertia (ULID id). */
+export type WorkspaceUser = {
+    id: string;
+    name: string;
+    email: string;
+    must_change_password: boolean;
+};
+
+/** Shared `workspaceAuth` prop from HandleInertiaRequests::share. */
+export type WorkspaceAuth = {
+    user: WorkspaceUser | null;
 };
 
 /**
@@ -146,6 +169,7 @@ export type FlashProps = {
 export type SharedProps = {
     appName: string;
     auth: Auth;
+    workspaceAuth: WorkspaceAuth;
     flash: FlashProps;
 };
 

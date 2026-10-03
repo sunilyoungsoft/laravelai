@@ -21,10 +21,20 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
-        '127.0.0.1',
-        'localhost',
-    ],
+    /**
+     * Central (Platform) domains. The Platform admin UI and its routes are host-scoped to
+     * these hosts (1F-D); requests on any other host are treated as tenant/company hosts and
+     * resolved to a Company by `tenant.resolve`.
+     *
+     * Configurable per environment via PLATFORM_CENTRAL_DOMAINS (comma-separated) so no host
+     * (local or production) is baked into committed config. When unset, falls back to the
+     * loopback hosts for a fresh checkout; set the real Platform host(s) in each environment's
+     * .env (e.g. PLATFORM_CENTRAL_DOMAINS=laravelai.test for local Laragon).
+     */
+    'central_domains' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('PLATFORM_CENTRAL_DOMAINS', '127.0.0.1,localhost'))
+    ))),
 
     /**
      * Platform-managed base domain for tenant subdomains (e.g. "{label}.{base_domain}").

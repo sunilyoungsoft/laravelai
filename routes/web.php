@@ -1,10 +1,7 @@
 <?php
 
-use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/', WelcomeController::class)->name('welcome');
 
 /*
  * Workspace-facing routes. The tenant.resolve middleware resolves the request hostname to a

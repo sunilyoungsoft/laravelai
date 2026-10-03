@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\PlatformUser;
+use App\Models\WorkspaceUser;
 
 return [
 
@@ -35,6 +36,16 @@ return [
             'driver' => 'session',
             'provider' => 'platform_users',
         ],
+
+        // Workspace (tenant) authentication. Its provider resolves WorkspaceUser on the
+        // DEFAULT connection, which is the dynamic `tenant` connection only while Stancl
+        // tenancy is initialized — so this guard is usable only behind `tenant.resolve`
+        // on a resolved Company host. Workspace code must name this guard explicitly
+        // (Auth::guard('workspace')); the application default guard stays `platform`.
+        'workspace' => [
+            'driver' => 'session',
+            'provider' => 'workspace_users',
+        ],
     ],
 
     /*
@@ -47,6 +58,11 @@ return [
         'platform_users' => [
             'driver' => 'eloquent',
             'model' => PlatformUser::class,
+        ],
+
+        'workspace_users' => [
+            'driver' => 'eloquent',
+            'model' => WorkspaceUser::class,
         ],
     ],
 

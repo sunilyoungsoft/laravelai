@@ -1,0 +1,47 @@
+// Workspace (tenant) database schema.
+//
+// One physical database per Company: workspace_{lowercase_company_ulid}.
+// These tables live ONLY in tenant databases, never in the Platform database.
+// Migrations are in database/migrations/tenant/ and run inside Stancl tenant
+// context during provisioning (and via `workspace:migrate` for existing tenants).
+//
+// Keep this file in sync with database/migrations/tenant/ whenever the workspace
+// schema changes.
+
+Project workspace {
+  database_type: 'MySQL'
+  Note: 'Per-company tenant database. Business/ERP data only.'
+}
+
+// Workspace users (1F-B). Authenticate on the `workspace` guard against the
+// resolved tenant database. `email` is unique within a single tenant DB only
+// (the same email may exist in a different company's database). Passwords are
+// Argon2id hashes (Laravel Hash abstraction). `must_change_password` forces the
+// initial Workspace Admin to set a permanent password on first login (1F-F).
+Table workspace_users {
+  id ulid [pk]
+  name varchar
+  email varchar [unique, note: 'Unique within this tenant database only']
+  password varchar [note: 'Argon2id hash — never plaintext']
+  must_change_password boolean [default: true]
+  status tinyint [default: 1, note: '1 = active']
+  last_login_at timestamp [null]
+  remember_token varchar [null]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [null, note: 'Soft deletes']
+
+  Indexes {
+    status
+  }
+}
+
+// workspace_meta — minimal non-business table proving per-workspace migrations
+// run and can be verified. Real ERP/business module tables arrive later.
+Table workspace_meta {
+  id ulid [pk]
+  key varchar [unique]
+  value text [null]
+  created_at timestamp
+  updated_at timestamp
+}

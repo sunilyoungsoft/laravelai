@@ -5,16 +5,23 @@ use App\Http\Controllers\Platform\CompanyController;
 use App\Http\Controllers\Platform\CompanyDomainController;
 use App\Http\Controllers\Platform\DashboardController;
 use App\Http\Controllers\Platform\WorkspaceProvisionController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 /*
  * Platform admin routes. These are central (Platform) routes served on the `platform`
  * connection. They never run under tenant.resolve and never initialize Stancl tenancy.
+ * They are host-scoped to the central platform domains (see bootstrap/app.php), so the
+ * same URIs on a tenant/company host are served by routes/workspace.php instead.
  *
  * Authentication uses the `platform` guard (the application default). Guest-only routes
  * expose the login form and credential attempt; everything else requires an authenticated
  * Platform User via `auth:platform`.
  */
+
+// Public central landing. Lives here (central-host-scoped) so `/` on a tenant host is the
+// workspace route, not the marketing/welcome page.
+Route::get('/', WelcomeController::class)->name('welcome');
 
 // Guest-only: already-authenticated platform admins are redirected away (to the dashboard).
 Route::middleware('guest:platform')->group(function () {
